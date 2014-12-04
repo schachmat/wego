@@ -83,56 +83,55 @@ var (
 		"NW":  "\033[1m↘\033[0m",
 		"NNW": "\033[1m↘\033[0m",
 	}
-	codes = map[int]Icon{
-		0:   {iconUnknown, iconUnknown},
-		113: {iconSunny, iconUnknown},
-		116: {iconPartlyCloudy, iconUnknown},
-		119: {iconUnknown, iconUnknown},
-		122: {iconVeryCloudy, iconVeryCloudy},
-		143: {iconUnknown, iconUnknown},
-		176: {iconUnknown, iconUnknown},
-		179: {iconUnknown, iconUnknown},
-		182: {iconUnknown, iconUnknown},
-		185: {iconUnknown, iconUnknown},
-		200: {iconUnknown, iconUnknown},
-		227: {iconUnknown, iconUnknown},
-		230: {iconUnknown, iconUnknown},
-		248: {iconUnknown, iconUnknown},
-		260: {iconUnknown, iconUnknown},
-		263: {iconUnknown, iconUnknown},
-		266: {iconUnknown, iconUnknown},
-		281: {iconUnknown, iconUnknown},
-		284: {iconUnknown, iconUnknown},
-		293: {iconUnknown, iconUnknown},
-		296: {iconUnknown, iconUnknown},
-		299: {iconUnknown, iconUnknown},
-		302: {iconUnknown, iconUnknown},
-		305: {iconUnknown, iconUnknown},
-		308: {iconUnknown, iconUnknown},
-		311: {iconUnknown, iconUnknown},
-		314: {iconUnknown, iconUnknown},
-		317: {iconUnknown, iconUnknown},
-		320: {iconUnknown, iconUnknown},
-		323: {iconUnknown, iconUnknown},
-		326: {iconUnknown, iconUnknown},
-		329: {iconUnknown, iconUnknown},
-		332: {iconUnknown, iconUnknown},
-		335: {iconUnknown, iconUnknown},
-		338: {iconUnknown, iconUnknown},
-		350: {iconUnknown, iconUnknown},
-		353: {iconUnknown, iconUnknown},
-		356: {iconUnknown, iconUnknown},
-		359: {iconUnknown, iconUnknown},
-		362: {iconUnknown, iconUnknown},
-		365: {iconUnknown, iconUnknown},
-		368: {iconUnknown, iconUnknown},
-		371: {iconUnknown, iconUnknown},
-		374: {iconUnknown, iconUnknown},
-		377: {iconUnknown, iconUnknown},
-		386: {iconUnknown, iconUnknown},
-		389: {iconUnknown, iconUnknown},
-		392: {iconUnknown, iconUnknown},
-		395: {iconUnknown, iconUnknown},
+	codes = map[int][]string{
+		113: iconSunny,
+		116: iconPartlyCloudy,
+		119: iconCloudy,
+		122: iconVeryCloudy,
+		143: iconUnknown,
+		176: iconUnknown,
+		179: iconUnknown,
+		182: iconUnknown,
+		185: iconUnknown,
+		200: iconThunderyShowers,
+		227: iconLightSnow,
+		230: iconHeavySnow,
+		248: iconUnknown,
+		260: iconUnknown,
+		263: iconUnknown,
+		266: iconLightRain,
+		281: iconUnknown,
+		284: iconUnknown,
+		293: iconLightRain,
+		296: iconLightRain,
+		299: iconUnknown,
+		302: iconHeavyRain,
+		305: iconUnknown,
+		308: iconHeavyRain,
+		311: iconUnknown,
+		314: iconUnknown,
+		317: iconUnknown,
+		320: iconLightSnow,
+		323: iconLightSnowShowers,
+		326: iconLightSnowShowers,
+		329: iconHeavySnow,
+		332: iconHeavySnow,
+		335: iconHeavySnowShowers,
+		338: iconHeavySnow,
+		350: iconUnknown,
+		353: iconUnknown,
+		356: iconUnknown,
+		359: iconHeavyRain,
+		362: iconUnknown,
+		365: iconUnknown,
+		368: iconLightSnowShowers,
+		371: iconHeavySnowShowers,
+		374: iconUnknown,
+		377: iconUnknown,
+		386: iconThunderyShowers,
+		389: iconThunderyHeavyRain,
+		392: iconThunderySnowShowers,
+		395: iconHeavySnowShowers, // ThunderyHeavySnow
 	}
 
 	iconUnknown = []string{
@@ -149,15 +148,21 @@ var (
 		"\033[38;5;226m    /   \\    \033[0m"}
 	iconPartlyCloudy = []string{
 		"\033[38;5;226m   \\  /\033[0m      ",
-		"\033[38;5;226m _ /\"\"\033[0m.-.    ",
-		"\033[38;5;226m   \\_\033[0m(   ).  ",
-		"\033[38;5;226m   /\033[0m(___(__) ",
+		"\033[38;5;226m _ /\"\"\033[38;5;250m.-.    \033[0m",
+		"\033[38;5;226m   \\_\033[38;5;250m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+		"             "}
+	iconCloudy = []string{
+		"             ",
+		"\033[38;5;250m     .--.    \033[0m",
+		"\033[38;5;250m  .-(    ).  \033[0m",
+		"\033[38;5;250m (___.__)__) \033[0m",
 		"             "}
 	iconVeryCloudy = []string{
 		"             ",
-		"\033[38;5;240m     .--.    \033[0m",
-		"\033[38;5;240m  .-(    ).  \033[0m",
-		"\033[38;5;240m (___.__)__) \033[0m",
+		"\033[38;5;240;1m     .--.    \033[0m",
+		"\033[38;5;240;1m  .-(    ).  \033[0m",
+		"\033[38;5;240;1m (___.__)__) \033[0m",
 		"             "}
 	iconLightShowers = []string{
 		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
@@ -171,13 +176,13 @@ var (
 		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
 		"\033[38;5;21;1m   ‚‘‚‘‚‘‚‘ \033[0m",
 		"\033[38;5;21;1m   ‚’‚’‚’‚’ \033[0m"}
-	iconLightSnow = []string{
+	iconLightSnowShowers = []string{
 		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
 		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
 		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 		"\033[38;5;255m     *  *  * \033[0m",
 		"\033[38;5;255m    *  *  *  \033[0m"}
-	iconHeavySnow = []string{
+	iconHeavySnowShowers = []string{
 		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
 		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
 		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
@@ -189,12 +194,42 @@ var (
 		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 		"    \033[38;5;228;5m⚡\033[38;5;111;25m‘ ‘\033[38;5;228;5m⚡\033[38;5;111;25m‘ ‘ \033[0m",
 		"    \033[38;5;111m‘ ‘ ‘ ‘  \033[0m"}
-	iconThunderySnow = []string{
+	iconThunderyHeavyRain = []string{
+		"\033[38;5;240;1m     .-.     \033[0m",
+		"\033[38;5;240;1m    (   ).   \033[0m",
+		"\033[38;5;240;1m   (___(__)  \033[0m",
+		"\033[38;5;21;1m  ‚‘\033[38;5;228;5m⚡\033[38;5;21;25m‘‚\033[38;5;228;5m⚡\033[38;5;21;25m‚‘   \033[0m",
+		"\033[38;5;21;1m  ‚’‚’\033[38;5;228;5m⚡\033[38;5;21;25m’‚’   \033[0m"}
+	iconThunderySnowShowers = []string{
 		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
 		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
 		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 		"\033[38;5;255m     *\033[38;5;228;5m⚡\033[38;5;255;25m *\033[38;5;228;5m⚡\033[38;5;255;25m * \033[0m",
 		"\033[38;5;255m    *  *  *  \033[0m"}
+	iconLightRain = []string{
+		"\033[38;5;250m     .-.     \033[0m",
+		"\033[38;5;250m    (   ).   \033[0m",
+		"\033[38;5;250m   (___(__)  \033[0m",
+		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
+		"\033[38;5;111m   ‘ ‘ ‘ ‘   \033[0m"}
+	iconHeavyRain = []string{
+		"\033[38;5;240;1m     .-.     \033[0m",
+		"\033[38;5;240;1m    (   ).   \033[0m",
+		"\033[38;5;240;1m   (___(__)  \033[0m",
+		"\033[38;5;21;1m  ‚‘‚‘‚‘‚‘   \033[0m",
+		"\033[38;5;21;1m  ‚’‚’‚’‚’   \033[0m"}
+	iconLightSnow = []string{
+		"\033[38;5;250m     .-.     \033[0m",
+		"\033[38;5;250m    (   ).   \033[0m",
+		"\033[38;5;250m   (___(__)  \033[0m",
+		"\033[38;5;255m    *  *  *  \033[0m",
+		"\033[38;5;255m   *  *  *   \033[0m"}
+	iconHeavySnow = []string{
+		"\033[38;5;240;1m     .-.     \033[0m",
+		"\033[38;5;240;1m    (   ).   \033[0m",
+		"\033[38;5;240;1m   (___(__)  \033[0m",
+		"\033[38;5;255;1m   * * * *   \033[0m",
+		"\033[38;5;255;1m  * * * *    \033[0m"}
 
 //	cloud = "
 //   .-.
@@ -225,43 +260,93 @@ func configsave() error {
 }
 
 func formatTemp(c Cond) string {
-	return fmt.Sprintf("%d – %d °C", c.FeelsLikeC, c.TempC)
+	color := func(temp int) string {
+		var col int = 21
+		switch temp {
+		case -15, -14, -13: col = 27
+		case -12, -11, -10: col = 33
+		case -9, -8, -7: col = 39
+		case -6, -5, -4: col = 45
+		case -3, -2, -1: col = 51
+		case 0, 1: col = 50
+		case 2, 3: col = 49
+		case 4, 5: col = 48
+		case 6, 7: col = 47
+		case 8, 9: col = 46
+		case 10, 11, 12: col = 82
+		case 13, 14, 15: col = 118
+		case 16, 17, 18: col = 154
+		case 19, 20, 21: col = 190
+		case 22, 23, 24: col = 226
+		case 25, 26, 27: col = 220
+		case 28, 29, 30: col = 214
+		case 31, 32, 33: col = 208
+		case 34, 35, 36: col = 202
+		default:
+			if temp > 0 {
+				col = 196
+			}
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
+	}
+	if c.FeelsLikeC != c.TempC {
+		return fmt.Sprintf("%s – %s °C         ", color(c.FeelsLikeC), color(c.TempC))[:48]
+	} else {
+		return fmt.Sprintf("%s °C            ", color(c.FeelsLikeC))[:31]
+	}
 }
 
 func formatWind(c Cond) string {
+	color := func(spd int) string {
+		var col int = 46
+		switch spd {
+		case 1, 2, 3: col = 82
+		case 4, 5, 6: col = 118
+		case 7, 8, 9: col = 154
+		case 10, 11, 12: col = 190
+		case 13, 14, 15: col = 226
+		case 16, 17, 18, 19: col = 220
+		case 20, 21, 22, 23: col = 214
+		case 24, 25, 26, 27: col = 208
+		case 28, 29, 30, 31: col = 202
+		default:
+			if spd > 0 {
+				col = 196
+			}
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
+	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return fmt.Sprintf("%s %d – %d km/h", windDir[c.Winddir16Point], c.WindspeedKmph, c.WindGustKmph)
+		return fmt.Sprintf("%s %s – %s km/h     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph))[:57]
 	} else {
-		return fmt.Sprintf("%s %d km/h", windDir[c.Winddir16Point], c.WindspeedKmph)
+		return fmt.Sprintf("%s %s km/h       ", windDir[c.Winddir16Point], color(c.WindspeedKmph))[:40]
 	}
 }
 
 func formatVisibility(c Cond) string {
-	return fmt.Sprintf("%d km", c.VisibleDistKM)
+	return fmt.Sprintf("%d km            ", c.VisibleDistKM)[:15]
 }
 
 func formatRain(c Cond) string {
 	if c.ChanceOfRain != "" {
-		return fmt.Sprintf("%v mm | %s%%", c.PrecipMM, c.ChanceOfRain)
+		return fmt.Sprintf("%v mm | %s%%        ", c.PrecipMM, c.ChanceOfRain)[:15]
 	} else {
-		return fmt.Sprintf("%v mm", c.PrecipMM)
+		return fmt.Sprintf("%v mm            ", c.PrecipMM)[:15]
 	}
 }
 
 func formatCond(cur []string, c Cond) (ret []string) {
-	var icon Icon
+	var icon []string
 	if i, ok := codes[c.WeatherCode]; !ok {
-		i.DayIcon = iconUnknown
-		i.NightIcon = iconUnknown
-		icon = i
+		icon = iconUnknown
 	} else {
 		icon = i
 	}
-	ret = append(ret, fmt.Sprintf("%v %v %-15v", cur[0], icon.DayIcon[0], c.WeatherDesc[0].Value))
-	ret = append(ret, fmt.Sprintf("%v %v %-15v", cur[1], icon.DayIcon[1], formatTemp(c)))
-	ret = append(ret, fmt.Sprintf("%v %v %-23v", cur[2], icon.DayIcon[2], formatWind(c)))
-	ret = append(ret, fmt.Sprintf("%v %v %-15v", cur[3], icon.DayIcon[3], formatVisibility(c)))
-	ret = append(ret, fmt.Sprintf("%v %v %-15v", cur[4], icon.DayIcon[4], formatRain(c)))
+	ret = append(ret, fmt.Sprintf("%v %v %-15v", cur[0], icon[0], c.WeatherDesc[0].Value))
+	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon[1], formatTemp(c)))
+	ret = append(ret, fmt.Sprintf("%v %v %v", cur[2], icon[2], formatWind(c)))
+	ret = append(ret, fmt.Sprintf("%v %v %v", cur[3], icon[3], formatVisibility(c)))
+	ret = append(ret, fmt.Sprintf("%v %v %v", cur[4], icon[4], formatRain(c)))
 	return
 }
 
@@ -354,8 +439,4 @@ func main() {
 			fmt.Println(val)
 		}
 	}
-	//	fmt.Println(strings.Join(iconSunny, "|\n"))
-	//	fmt.Println(strings.Join(iconPartlyCloudy, "|\n"))
-	//	fmt.Println(strings.Join(iconHeavyShowers, "|\n"))
-	//	fmt.Println(strings.Join(iconThunderyShowers, "|\n"))
 }
