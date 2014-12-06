@@ -282,8 +282,10 @@ func formatTemp(c Cond) string {
 		}
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
 	}
-	if c.FeelsLikeC != c.TempC {
+	if c.FeelsLikeC < c.TempC {
 		return fmt.Sprintf("%s – %s °C         ", color(c.FeelsLikeC), color(c.TempC))[:48]
+	} else if c.FeelsLikeC > c.TempC {
+		return fmt.Sprintf("%s – %s °C         ", color(c.TempC), color(c.FeelsLikeC))[:48]
 	} else {
 		return fmt.Sprintf("%s °C            ", color(c.FeelsLikeC))[:31]
 	}
