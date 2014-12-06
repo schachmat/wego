@@ -89,7 +89,7 @@ var (
 		119: iconCloudy,
 		122: iconVeryCloudy,
 		143: iconUnknown,
-		176: iconUnknown,
+		176: iconLightShowers,
 		179: iconUnknown,
 		182: iconUnknown,
 		185: iconUnknown,
@@ -98,15 +98,15 @@ var (
 		230: iconHeavySnow,
 		248: iconUnknown,
 		260: iconUnknown,
-		263: iconUnknown,
+		263: iconLightShowers,
 		266: iconLightRain,
 		281: iconUnknown,
 		284: iconUnknown,
 		293: iconLightRain,
 		296: iconLightRain,
-		299: iconUnknown,
+		299: iconHeavyShowers,
 		302: iconHeavyRain,
-		305: iconUnknown,
+		305: iconHeavyShowers,
 		308: iconHeavyRain,
 		311: iconUnknown,
 		314: iconUnknown,
@@ -119,8 +119,8 @@ var (
 		335: iconHeavySnowShowers,
 		338: iconHeavySnow,
 		350: iconUnknown,
-		353: iconUnknown,
-		356: iconUnknown,
+		353: iconLightShowers,
+		356: iconHeavyShowers,
 		359: iconHeavyRain,
 		362: iconUnknown,
 		365: iconUnknown,
@@ -230,13 +230,6 @@ var (
 		"\033[38;5;240;1m   (___(__)  \033[0m",
 		"\033[38;5;255;1m   * * * *   \033[0m",
 		"\033[38;5;255;1m  * * * *    \033[0m"}
-
-//	cloud = "
-//   .-.
-//  (   ).
-// (___(__)
-//  ' ' '
-// ' ' ' "
 )
 
 const (
@@ -342,7 +335,7 @@ func formatCond(cur []string, c Cond) (ret []string) {
 	} else {
 		icon = i
 	}
-	ret = append(ret, fmt.Sprintf("%v %v %-15v", cur[0], icon[0], c.WeatherDesc[0].Value))
+	ret = append(ret, fmt.Sprintf("%v %v %-15.15v", cur[0], icon[0], c.WeatherDesc[0].Value))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon[1], formatTemp(c)))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[2], icon[2], formatWind(c)))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[3], icon[3], formatVisibility(c)))
