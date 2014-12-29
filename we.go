@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -48,10 +49,16 @@ type Weather struct {
 	MintempC  int `json:"mintempC,string"`
 }
 
+type Loc struct {
+	Query string `json:"query"`
+	Type string `json:"type"`
+}
+
 type Resp struct {
 	Data struct {
 		Cur     []Cond     `json:"current_condition"`
-		Req     []struct{} `json:"request"`
+		Err     []struct{Msg string} `json:"error"`
+		Req     []Loc `json:"request"`
 		Weather []Weather  `json:"weather"`
 	} `json:"data"`
 }
@@ -174,8 +181,8 @@ var (
 		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
 		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
 		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
-		"\033[38;5;21;1m   ‚‘‚‘‚‘‚‘ \033[0m",
-		"\033[38;5;21;1m   ‚’‚’‚’‚’ \033[0m"}
+		"\033[38;5;21;1m   ‚‘‚‘‚‘‚‘  \033[0m",
+		"\033[38;5;21;1m   ‚’‚’‚’‚’  \033[0m"}
 	iconLightSnowShowers = []string{
 		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
 		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
@@ -352,7 +359,11 @@ func printDay(w Weather) (ret []string) {
 		ret[i] = "│"
 	}
 	for _, h := range hourly {
-		if h.Time == "100" || h.Time == "400" || h.Time == "700" || h.Time == "1600" {
+		if h.Time == "0" || h.Time == "100" ||
+		h.Time == "200" || h.Time == "300" || h.Time == "400" ||
+		h.Time == "500" || h.Time == "600" || h.Time == "700" ||
+		h.Time == "1400" || h.Time == "1500" || h.Time == "1600" ||
+		h.Time == "2300" {
 			continue
 		}
 		ret = formatCond(ret, h)
@@ -392,20 +403,29 @@ func init() {
 }
 
 func main() {
-	for i := 1; i < len(os.Args); i++ {
-		_ = os.Args[i]
-	}
+	var numdays = 3
 
 	if len(config.APIKey) > 0 {
 		params = append(params, "key="+config.APIKey)
 	}
+
+	for _, arg := range(os.Args[1:]) {
+		if v, err := strconv.Atoi(arg); err == nil {
+			numdays = v
+		} else {
+			config.City = arg
+		}
+	}
+
 	if len(config.City) > 0 {
 		params = append(params, "q="+url.QueryEscape(config.City))
 	}
 	params = append(params, "format=json")
-	params = append(params, "num_of_days=3")
+	params = append(params, "num_of_days=" + strconv.Itoa(numdays))
 	params = append(params, "tp=3")
 	params = append(params, "lang=de")
+
+//	fmt.Fprintln(os.Stderr, params)
 
 	res, err := http.Get(uri + strings.Join(params, "&"))
 	defer res.Body.Close()
@@ -424,11 +444,25 @@ func main() {
 		log.Println(err)
 	}
 
+	if r.Data.Req == nil || len(r.Data.Req) < 1 {
+		if r.Data.Err != nil && len(r.Data.Err) >= 1 {
+			log.Fatal(r.Data.Err[0].Msg)
+		}
+		log.Fatal("Malformed response.")
+	}
+	fmt.Printf("Weather for %s: %s\n\n", r.Data.Req[0].Type, r.Data.Req[0].Query)
+
+	if r.Data.Cur == nil || len(r.Data.Cur) < 1 {
+		log.Fatal("No weather data available.")
+	}
 	out := formatCond(make([]string, 5), r.Data.Cur[0])
 	for _, val := range out {
 		fmt.Println(val)
 	}
 
+	if r.Data.Weather == nil {
+		log.Fatal("No detailed weather forecast available.")
+	}
 	for _, d := range r.Data.Weather {
 		for _, val := range printDay(d) {
 			fmt.Println(val)
