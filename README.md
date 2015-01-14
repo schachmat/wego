@@ -36,8 +36,8 @@ wego is a weather client for the terminal.
    the city to your preference. Save the file.
 5. Run `wego` once again and you should get the weather forecast for the current
    and next 2 days.
-6. If you're visiting someone in e.g. London over the weekend, just run `wego 4
-   London` or `wego London 4` (it makes no difference) to get the forecast for
+6. If you're visiting someone in e.g. London over the weekend, just run
+   `wego 4 London` or `wego London 4` (it makes no difference) to get the forecast for
    the current and the next 3 days.
 
 ##License
