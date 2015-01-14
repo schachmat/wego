@@ -2,6 +2,21 @@
 
 wego is a weather client for the terminal.
 
+##Features
+
+* show forecast for 1 to 5 days
+* nice ASCII art icons (mist and fog are still missing, if you want to
+  contribute, that's your chance!)
+* displayed info:
+  * temperature
+  * windspeed and direction
+  * viewing distance
+  * precipitation amount and probability
+* ssl, so the NSA does not learn where you live or where you're going
+* config file for default location which can be overridden by commandline
+
+![Screenshots](http://schachmat.github.io/wego/wego.gif)
+
 ##License
 
 Copyright (c) 2014,  <teichm@in.tum.de>
