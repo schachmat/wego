@@ -27,7 +27,7 @@ wego is a weather client for the terminal.
 
 1. Install by running:
 
-	go get github.com/schachmat/wego
+  go get github.com/schachmat/wego
 
    The wego binary will be installed in your `$GOPATH` as usual.
 
