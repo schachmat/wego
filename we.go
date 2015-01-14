@@ -15,12 +15,12 @@ import (
 	"strings"
 )
 
-type Config struct {
+type configuration struct {
 	APIKey string
 	City   string
 }
 
-type Cond struct {
+type cond struct {
 	ChanceOfRain   string  `json:"chanceofrain"`
 	FeelsLikeC     int     `json:",string"`
 	PrecipMM       float32 `json:"precipMM,string"`
@@ -34,42 +34,37 @@ type Cond struct {
 	WindspeedKmph  int    `json:"windspeedKmph,string"`
 }
 
-type Astro struct {
+type astro struct {
 	Moonrise string
 	Moonset  string
 	Sunrise  string
 	Sunset   string
 }
 
-type Weather struct {
-	Astronomy []Astro
+type weather struct {
+	Astronomy []astro
 	Date      string
-	Hourly    []Cond
+	Hourly    []cond
 	MaxtempC  int `json:"maxtempC,string"`
 	MintempC  int `json:"mintempC,string"`
 }
 
-type Loc struct {
+type loc struct {
 	Query string `json:"query"`
 	Type string `json:"type"`
 }
 
-type Resp struct {
+type resp struct {
 	Data struct {
-		Cur     []Cond     `json:"current_condition"`
+		Cur     []cond     `json:"current_condition"`
 		Err     []struct{Msg string} `json:"error"`
-		Req     []Loc `json:"request"`
-		Weather []Weather  `json:"weather"`
+		Req     []loc `json:"request"`
+		Weather []weather  `json:"weather"`
 	} `json:"data"`
 }
 
-type Icon struct {
-	DayIcon   []string
-	NightIcon []string
-}
-
 var (
-	config     Config
+	config     configuration
 	configpath string
 	params     []string
 	windDir    = map[string]string{
@@ -244,24 +239,24 @@ const (
 )
 
 func configload() error {
-	if b, err := ioutil.ReadFile(configpath); err == nil {
+	b, err := ioutil.ReadFile(configpath)
+	if err == nil {
 		return json.Unmarshal(b, &config)
-	} else {
-		return err
 	}
+	return err
 }
 
 func configsave() error {
-	if j, err := json.MarshalIndent(config, "", "\t"); err == nil {
+	j, err := json.MarshalIndent(config, "", "\t")
+	if err == nil {
 		return ioutil.WriteFile(configpath, j, 0600)
-	} else {
-		return err
 	}
+	return err
 }
 
-func formatTemp(c Cond) string {
+func formatTemp(c cond) string {
 	color := func(temp int) string {
-		var col int = 21
+		var col = 21
 		switch temp {
 		case -15, -14, -13: col = 27
 		case -12, -11, -10: col = 33
@@ -298,9 +293,9 @@ func formatTemp(c Cond) string {
 	}
 }
 
-func formatWind(c Cond) string {
+func formatWind(c cond) string {
 	color := func(spd int) string {
-		var col int = 46
+		var col = 46
 		switch spd {
 		case 1, 2, 3: col = 82
 		case 4, 5, 6: col = 118
@@ -320,24 +315,22 @@ func formatWind(c Cond) string {
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
 		return fmt.Sprintf("%s %s – %s km/h     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph))[:57]
-	} else {
-		return fmt.Sprintf("%s %s km/h       ", windDir[c.Winddir16Point], color(c.WindspeedKmph))[:40]
 	}
+	return fmt.Sprintf("%s %s km/h       ", windDir[c.Winddir16Point], color(c.WindspeedKmph))[:40]
 }
 
-func formatVisibility(c Cond) string {
+func formatVisibility(c cond) string {
 	return fmt.Sprintf("%d km            ", c.VisibleDistKM)[:15]
 }
 
-func formatRain(c Cond) string {
+func formatRain(c cond) string {
 	if c.ChanceOfRain != "" {
 		return fmt.Sprintf("%v mm | %s%%        ", c.PrecipMM, c.ChanceOfRain)[:15]
-	} else {
-		return fmt.Sprintf("%v mm            ", c.PrecipMM)[:15]
 	}
+	return fmt.Sprintf("%v mm            ", c.PrecipMM)[:15]
 }
 
-func formatCond(cur []string, c Cond) (ret []string) {
+func formatCond(cur []string, c cond) (ret []string) {
 	var icon []string
 	if i, ok := codes[c.WeatherCode]; !ok {
 		icon = iconUnknown
@@ -352,7 +345,7 @@ func formatCond(cur []string, c Cond) (ret []string) {
 	return
 }
 
-func printDay(w Weather) (ret []string) {
+func printDay(w weather) (ret []string) {
 	hourly := w.Hourly
 	ret = make([]string, 5)
 	for i := range ret {
@@ -439,7 +432,7 @@ func main() {
 
 //	fmt.Println(string(body))
 
-	var r Resp
+	var r resp
 	if err = json.Unmarshal(body, &r); err != nil {
 		log.Println(err)
 	}
