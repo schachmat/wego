@@ -90,7 +90,7 @@ var (
 		116: iconPartlyCloudy,
 		119: iconCloudy,
 		122: iconVeryCloudy,
-		143: iconUnknown,
+		143: iconFog,
 		176: iconLightShowers,
 		179: iconUnknown,
 		182: iconUnknown,
@@ -98,8 +98,8 @@ var (
 		200: iconThunderyShowers,
 		227: iconLightSnow,
 		230: iconHeavySnow,
-		248: iconUnknown,
-		260: iconUnknown,
+		248: iconFog,
+		260: iconFog,
 		263: iconLightShowers,
 		266: iconLightRain,
 		281: iconUnknown,
@@ -232,6 +232,12 @@ var (
 		"\033[38;5;240;1m   (___(__)  \033[0m",
 		"\033[38;5;255;1m   * * * *   \033[0m",
 		"\033[38;5;255;1m  * * * *    \033[0m"}
+	iconFog = []string{
+		"             ",
+		"\033[38;5;251m _ - _ - _ - \033[0m",
+		"\033[38;5;251m  _ - _ - _  \033[0m",
+		"\033[38;5;251m _ - _ - _ - \033[0m",
+		"             "}
 )
 
 const (
