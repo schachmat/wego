@@ -427,10 +427,10 @@ func main() {
 //	fmt.Fprintln(os.Stderr, params)
 
 	res, err := http.Get(uri + strings.Join(params, "&"))
-	defer res.Body.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal(err)
