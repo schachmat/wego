@@ -241,7 +241,7 @@ var (
 )
 
 const (
-	uri = "https://api2.worldweatheronline.com/free/v2/weather.ashx?"
+	uri = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
 )
 
 func configload() error {
