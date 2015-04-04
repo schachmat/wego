@@ -24,24 +24,25 @@ wego is a weather client for the terminal.
 
 ##Setup
 
-1. To Install the wego binary into your `$GOPATH` as usual, run: `go get github.com/schachmat/wego`
+1. To Install the wego binary into your `$GOPATH` as usual, run:
+   `go get github.com/schachmat/wego`
 2. Run `wego` once. You will get an error message, but the config file will be
    generated for you as well.
 3. If you don't have the necessary API key yet, you can [register
    here](https://developer.worldweatheronline.com/auth/register) with your
    github.com account. Your github.com account needs a public email address, but
-   it does not have to exist.
+   you can choose a bogus one.
 4. Copy your API key into the `.wegorc` file in your `$HOME` folder and change
    the city to your preference. Save the file.
 5. Run `wego` once again and you should get the weather forecast for the current
    and next 2 days.
 6. If you're visiting someone in e.g. London over the weekend, just run
-   `wego 4 London` or `wego London 4` (it makes no difference) to get the forecast for
-   the current and the next 3 days.
+   `wego 4 London` or `wego London 4` (the ordering of arguments makes no
+   difference) to get the forecast for the current and the next 3 days.
 
 ##License
 
-Copyright (c) 2014,  <teichm@in.tum.de>
+Copyright (c) 2015,  <teichm@in.tum.de>
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
