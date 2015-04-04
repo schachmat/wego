@@ -5,8 +5,7 @@ wego is a weather client for the terminal.
 ##Features
 
 * show forecast for 1 to 5 days
-* nice ASCII art icons (some are still missing, if you want to contribute,
-  that's your chance!)
+* nice ASCII art icons
 * displayed info:
   * temperature
   * windspeed and direction
