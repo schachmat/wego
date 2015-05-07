@@ -39,7 +39,9 @@ wego is a weather client for the terminal.
 6. If you're visiting someone in e.g. London over the weekend, just run
    `wego 4 London` or `wego London 4` (the ordering of arguments makes no
    difference) to get the forecast for the current and the next 3 days.
-
+7. OPTIONAL - By default the temperature is displayed in Celsius. To display in Fahrenheit,
+   add the `"Unit" : "F"` to your `.wegorc`.
+   
 ##License
 
 Copyright (c) 2015,  <teichm@in.tum.de>
