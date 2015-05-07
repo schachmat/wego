@@ -18,6 +18,7 @@ import (
 type configuration struct {
 	APIKey string
 	City   string
+	TempUnit   string
 }
 
 type cond struct {
@@ -272,6 +273,14 @@ func configsave() error {
 	return err
 }
 
+func getTempUnit() string{
+     if(config.TempUnit == "F" || config.TempUnit == "f"){
+            return "F"
+     } else {
+       	    return "C"
+     }
+}
+
 func formatTemp(c cond) string {
 	color := func(temp int) string {
 		var col = 21
@@ -300,14 +309,18 @@ func formatTemp(c cond) string {
 				col = 196
 			}
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
+		temp_unit:= float32(temp)
+		if(getTempUnit() == "F"){
+		       temp_unit = float32(temp) * 1.8 + 32.0
+		} 
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(temp_unit))
 	}
 	if c.FeelsLikeC < c.TempC {
-		return fmt.Sprintf("%s – %s °C         ", color(c.FeelsLikeC), color(c.TempC))[:48]
+		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(c.TempC), getTempUnit())[:48]
 	} else if c.FeelsLikeC > c.TempC {
-		return fmt.Sprintf("%s – %s °C         ", color(c.TempC), color(c.FeelsLikeC))[:48]
+		return fmt.Sprintf("%s – %s °%s         ", color(c.TempC), color(c.FeelsLikeC), getTempUnit())[:48]
 	} else {
-		return fmt.Sprintf("%s °C            ", color(c.FeelsLikeC))[:31]
+		return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), getTempUnit())[:31]
 	}
 }
 
