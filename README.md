@@ -32,8 +32,9 @@ wego is a weather client for the terminal.
    here](https://developer.worldweatheronline.com/auth/register) with your
    github.com account. Your github.com account needs a public email address, but
    you can choose a bogus one.
-4. Copy your API key into the `.wegorc` file in your `$HOME` folder and change
-   the city to your preference. Save the file.
+4. Copy your API key into the `.wegorc` file in your `$HOME` folder, change
+   the city to your preference, and choose if you want to use metric or imperial
+   units. Save the file.
 5. Run `wego` once again and you should get the weather forecast for the current
    and next 2 days.
 6. If you're visiting someone in e.g. London over the weekend, just run

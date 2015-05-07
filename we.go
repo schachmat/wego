@@ -18,6 +18,7 @@ import (
 type configuration struct {
 	APIKey string
 	City   string
+	Imperial bool
 }
 
 type cond struct {
@@ -84,6 +85,22 @@ var (
 		"WNW": "\033[1m→\033[0m",
 		"NW":  "\033[1m↘\033[0m",
 		"NNW": "\033[1m↘\033[0m",
+	}
+	unitRain = map[bool]string{
+		false: "mm",
+		true: "in",
+	}
+	unitTemp = map[bool]string{
+		false: "C",
+		true: "F",
+	}
+	unitVis = map[bool]string{
+		false: "km",
+		true: "mi",
+	}
+	unitWind = map[bool]string{
+		false: "km/h",
+		true: "mph",
 	}
 	codes = map[int][]string{
 		113: iconSunny,
@@ -300,14 +317,18 @@ func formatTemp(c cond) string {
 				col = 196
 			}
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
+		tempUnit := float32(temp)
+		if config.Imperial {
+			tempUnit = float32(temp) * 1.8 + 32.0
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(tempUnit))
 	}
 	if c.FeelsLikeC < c.TempC {
-		return fmt.Sprintf("%s – %s °C         ", color(c.FeelsLikeC), color(c.TempC))[:48]
+		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(c.TempC), unitTemp[config.Imperial])[:48]
 	} else if c.FeelsLikeC > c.TempC {
-		return fmt.Sprintf("%s – %s °C         ", color(c.TempC), color(c.FeelsLikeC))[:48]
+		return fmt.Sprintf("%s – %s °%s         ", color(c.TempC), color(c.FeelsLikeC), unitTemp[config.Imperial])[:48]
 	} else {
-		return fmt.Sprintf("%s °C            ", color(c.FeelsLikeC))[:31]
+		return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
 	}
 }
 
@@ -329,23 +350,35 @@ func formatWind(c cond) string {
 				col = 196
 			}
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
+		spdUnit := float32(spd)
+		if config.Imperial {
+			spdUnit = float32(spd) / 1.609
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spdUnit))
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return fmt.Sprintf("%s %s – %s km/h     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph))[:57]
+		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial])[:57]
 	}
-	return fmt.Sprintf("%s %s km/h       ", windDir[c.Winddir16Point], color(c.WindspeedKmph))[:40]
+	return fmt.Sprintf("%s %s %s        ", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial])[:40]
 }
 
 func formatVisibility(c cond) string {
-	return fmt.Sprintf("%d km            ", c.VisibleDistKM)[:15]
+	distUnit := float32(c.VisibleDistKM)
+	if config.Imperial {
+		distUnit = float32(c.VisibleDistKM) * 0.621
+	}
+	return fmt.Sprintf("%d %s            ", int32(distUnit), unitVis[config.Imperial])[:15]
 }
 
 func formatRain(c cond) string {
-	if c.ChanceOfRain != "" {
-		return fmt.Sprintf("%v mm | %s%%        ", c.PrecipMM, c.ChanceOfRain)[:15]
+	rainUnit := float32(c.PrecipMM)
+	if config.Imperial {
+		rainUnit = float32(c.PrecipMM) * 0.039
 	}
-	return fmt.Sprintf("%v mm            ", c.PrecipMM)[:15]
+	if c.ChanceOfRain != "" {
+		return fmt.Sprintf("%.1f %s | %s%%        ", rainUnit, unitRain[config.Imperial], c.ChanceOfRain)[:15]
+	}
+	return fmt.Sprintf("%.1f %s            ", rainUnit, unitRain[config.Imperial])[:15]
 }
 
 func formatCond(cur []string, c cond) (ret []string) {
@@ -403,6 +436,7 @@ func init() {
 	configpath = path.Join(usr.HomeDir, ".wegorc")
 	config.APIKey = ""
 	config.City = "New York"
+	config.Imperial = false
 	err = configload()
 	if _, ok := err.(*os.PathError); ok {
 		if err := configsave(); err != nil {
