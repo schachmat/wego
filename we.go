@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/mattn/go-colorable"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -509,9 +510,10 @@ func main() {
 	if r.Data.Weather == nil {
 		log.Fatal("No detailed weather forecast available.")
 	}
+	stdout := colorable.NewColorableStdout()
 	for _, d := range r.Data.Weather {
 		for _, val := range printDay(d) {
-			fmt.Println(val)
+			fmt.Fprintln(stdout, val)
 		}
 	}
 }
