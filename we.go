@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mattn/go-colorable"
 	"io/ioutil"
 	"time"
 	"log"
@@ -496,13 +497,14 @@ func main() {
 		log.Fatal("Malformed response.")
 	}
 	fmt.Printf("Weather for %s: %s\n\n", r.Data.Req[0].Type, r.Data.Req[0].Query)
+	stdout := colorable.NewColorableStdout()
 
 	if r.Data.Cur == nil || len(r.Data.Cur) < 1 {
 		log.Fatal("No weather data available.")
 	}
 	out := formatCond(make([]string, 5), r.Data.Cur[0])
 	for _, val := range out {
-		fmt.Println(val)
+		fmt.Fprintln(stdout, val)
 	}
 
 	if r.Data.Weather == nil {
@@ -510,7 +512,7 @@ func main() {
 	}
 	for _, d := range r.Data.Weather {
 		for _, val := range printDay(d) {
-			fmt.Println(val)
+			fmt.Fprintln(stdout, val)
 		}
 	}
 }
