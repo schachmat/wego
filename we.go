@@ -18,7 +18,9 @@ import (
 type configuration struct {
 	APIKey string
 	City   string
-	TempUnit   string
+	Units   string
+	TempUnit string
+	WindUnit string
 }
 
 type cond struct {
@@ -274,10 +276,34 @@ func configsave() error {
 }
 
 func getTempUnit() string{
-     if(config.TempUnit == "F" || config.TempUnit == "f"){
+     if(strings.ToLower(config.Units) == "imperial" || strings.ToLower(config.TempUnit) == "imperial" || strings.ToLower(config.TempUnit) == "f" ){
             return "F"
      } else {
        	    return "C"
+     }
+}
+
+func getVisibilityUnit() string{
+     if(strings.ToLower(config.Units) == "imperial"){
+            return "mi"
+     } else {
+       	    return "km"
+     }
+}
+
+func getRainUnit() string{
+     if(strings.ToLower(config.Units) == "imperial"){
+            return "in"
+     } else {
+       	    return "mm"
+     }
+}
+
+func getWindUnit() string{
+     if(strings.ToLower(config.Units) == "imperial" || strings.ToLower(config.WindUnit) == "imperial" || strings.ToLower(config.WindUnit) == "mph"){
+            return "mph"
+     } else {
+       	    return "km/h"
      }
 }
 
@@ -342,23 +368,35 @@ func formatWind(c cond) string {
 				col = 196
 			}
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
+		spd_unit := float32(spd)
+		if(getWindUnit() == "mph"){
+			spd_unit = float32(spd) / 1.609
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spd_unit))
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return fmt.Sprintf("%s %s – %s km/h     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph))[:57]
+		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), getWindUnit())[:57]
 	}
-	return fmt.Sprintf("%s %s km/h       ", windDir[c.Winddir16Point], color(c.WindspeedKmph))[:40]
+	return fmt.Sprintf("%s %s %s       ", windDir[c.Winddir16Point], color(c.WindspeedKmph), getWindUnit())[:40]
 }
 
 func formatVisibility(c cond) string {
-	return fmt.Sprintf("%d km            ", c.VisibleDistKM)[:15]
+     	temp_dist := float32(c.VisibleDistKM)
+	if(getVisibilityUnit() == "mph"){
+	       temp_dist = float32(c.VisibleDistKM) * 0.621
+	}
+	return fmt.Sprintf("%d %s            ", int32(temp_dist),getVisibilityUnit())[:15]
 }
 
 func formatRain(c cond) string {
-	if c.ChanceOfRain != "" {
-		return fmt.Sprintf("%v mm | %s%%        ", c.PrecipMM, c.ChanceOfRain)[:15]
+     	temp_rain := float32(c.PrecipMM)
+	if(getRainUnit() == "in"){
+	       temp_rain = float32(c.PrecipMM) * 0.039
 	}
-	return fmt.Sprintf("%v mm            ", c.PrecipMM)[:15]
+	if c.ChanceOfRain != "" {
+		return fmt.Sprintf("%.2f %s | %s%%        ", temp_rain, getRainUnit(), c.ChanceOfRain)[:15]
+	}
+	return fmt.Sprintf("%.2f %s            ", temp_rain, getRainUnit())[:15]
 }
 
 func formatCond(cur []string, c cond) (ret []string) {
