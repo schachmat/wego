@@ -18,6 +18,7 @@ import (
 type configuration struct {
 	APIKey string
 	City   string
+	Units   string
 }
 
 type cond struct {
@@ -272,6 +273,38 @@ func configsave() error {
 	return err
 }
 
+func getTempUnit() string{
+     if(strings.ToLower(config.Units) == "imperial" ){
+            return "F"
+     } else {
+       	    return "C"
+     }
+}
+
+func getVisibilityUnit() string{
+     if(strings.ToLower(config.Units) == "imperial"){
+            return "mi"
+     } else {
+       	    return "km"
+     }
+}
+
+func getRainUnit() string{
+     if(strings.ToLower(config.Units) == "imperial"){
+            return "in"
+     } else {
+       	    return "mm"
+     }
+}
+
+func getWindUnit() string{
+     if(strings.ToLower(config.Units) == "imperial"){
+            return "mph"
+     } else {
+       	    return "km/h"
+     }
+}
+
 func formatTemp(c cond) string {
 	color := func(temp int) string {
 		var col = 21
@@ -300,14 +333,18 @@ func formatTemp(c cond) string {
 				col = 196
 			}
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
+		temp_unit:= float32(temp)
+		if(getTempUnit() == "F"){
+		       temp_unit = float32(temp) * 1.8 + 32.0
+		} 
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(temp_unit))
 	}
 	if c.FeelsLikeC < c.TempC {
-		return fmt.Sprintf("%s – %s °C         ", color(c.FeelsLikeC), color(c.TempC))[:48]
+		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(c.TempC), getTempUnit())[:48]
 	} else if c.FeelsLikeC > c.TempC {
-		return fmt.Sprintf("%s – %s °C         ", color(c.TempC), color(c.FeelsLikeC))[:48]
+		return fmt.Sprintf("%s – %s °%s         ", color(c.TempC), color(c.FeelsLikeC), getTempUnit())[:48]
 	} else {
-		return fmt.Sprintf("%s °C            ", color(c.FeelsLikeC))[:31]
+		return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), getTempUnit())[:31]
 	}
 }
 
@@ -329,23 +366,35 @@ func formatWind(c cond) string {
 				col = 196
 			}
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
+		spd_unit := float32(spd)
+		if(getWindUnit() == "mph"){
+			spd_unit = float32(spd) / 1.609
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spd_unit))
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return fmt.Sprintf("%s %s – %s km/h     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph))[:57]
+		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), getWindUnit())[:57]
 	}
-	return fmt.Sprintf("%s %s km/h       ", windDir[c.Winddir16Point], color(c.WindspeedKmph))[:40]
+	return fmt.Sprintf("%s %s %s       ", windDir[c.Winddir16Point], color(c.WindspeedKmph), getWindUnit())[:40]
 }
 
 func formatVisibility(c cond) string {
-	return fmt.Sprintf("%d km            ", c.VisibleDistKM)[:15]
+     	temp_dist := float32(c.VisibleDistKM)
+	if(getVisibilityUnit() == "mph"){
+	       temp_dist = float32(c.VisibleDistKM) * 0.621
+	}
+	return fmt.Sprintf("%d %s            ", int32(temp_dist),getVisibilityUnit())[:15]
 }
 
 func formatRain(c cond) string {
-	if c.ChanceOfRain != "" {
-		return fmt.Sprintf("%v mm | %s%%        ", c.PrecipMM, c.ChanceOfRain)[:15]
+     	temp_rain := float32(c.PrecipMM)
+	if(getRainUnit() == "in"){
+	       temp_rain = float32(c.PrecipMM) * 0.039
 	}
-	return fmt.Sprintf("%v mm            ", c.PrecipMM)[:15]
+	if c.ChanceOfRain != "" {
+		return fmt.Sprintf("%.2f %s | %s%%        ", temp_rain, getRainUnit(), c.ChanceOfRain)[:15]
+	}
+	return fmt.Sprintf("%.2f %s            ", temp_rain, getRainUnit())[:15]
 }
 
 func formatCond(cur []string, c cond) (ret []string) {
@@ -403,6 +452,7 @@ func init() {
 	configpath = path.Join(usr.HomeDir, ".wegorc")
 	config.APIKey = ""
 	config.City = "New York"
+	config.Units = "metric"
 	err = configload()
 	if _, ok := err.(*os.PathError); ok {
 		if err := configsave(); err != nil {
