@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,6 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+var (
+	lang = flag.String("lang", "de", "language")
 )
 
 type configuration struct {
@@ -442,6 +447,8 @@ func init() {
 }
 
 func main() {
+	flag.Parse()
+
 	var numdays = 3
 
 	if len(config.APIKey) > 0 {
@@ -462,7 +469,7 @@ func main() {
 	params = append(params, "format=json")
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
-	params = append(params, "lang=de")
+	params = append(params, "lang="+*lang)
 
 	//	fmt.Fprintln(os.Stderr, params)
 
