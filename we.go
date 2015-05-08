@@ -19,8 +19,6 @@ type configuration struct {
 	APIKey string
 	City   string
 	Units   string
-	TempUnit string
-	WindUnit string
 }
 
 type cond struct {
@@ -276,7 +274,7 @@ func configsave() error {
 }
 
 func getTempUnit() string{
-     if(strings.ToLower(config.Units) == "imperial" || strings.ToLower(config.TempUnit) == "imperial" || strings.ToLower(config.TempUnit) == "f" ){
+     if(strings.ToLower(config.Units) == "imperial" ){
             return "F"
      } else {
        	    return "C"
@@ -300,7 +298,7 @@ func getRainUnit() string{
 }
 
 func getWindUnit() string{
-     if(strings.ToLower(config.Units) == "imperial" || strings.ToLower(config.WindUnit) == "imperial" || strings.ToLower(config.WindUnit) == "mph"){
+     if(strings.ToLower(config.Units) == "imperial"){
             return "mph"
      } else {
        	    return "km/h"
@@ -454,6 +452,7 @@ func init() {
 	configpath = path.Join(usr.HomeDir, ".wegorc")
 	config.APIKey = ""
 	config.City = "New York"
+	config.Units = "metric"
 	err = configload()
 	if _, ok := err.(*os.PathError); ok {
 		if err := configsave(); err != nil {

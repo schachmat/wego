@@ -32,15 +32,13 @@ wego is a weather client for the terminal.
    here](https://developer.worldweatheronline.com/auth/register) with your
    github.com account. Your github.com account needs a public email address, but
    you can choose a bogus one.
-4. Copy your API key into the `.wegorc` file in your `$HOME` folder and change
-   the city to your preference. Save the file.
+4. Copy your API key into the `.wegorc` file in your `$HOME` folder, change
+   the city to your preference, and choose either `metric` or `imperial` units. Save the file.
 5. Run `wego` once again and you should get the weather forecast for the current
    and next 2 days.
 6. If you're visiting someone in e.g. London over the weekend, just run
    `wego 4 London` or `wego London 4` (the ordering of arguments makes no
    difference) to get the forecast for the current and the next 3 days.
-7. OPTIONAL - By default the temperature and wind is displayed in metric units. To display the temperature in Fahrenheit and wind speed in mph,
-   add the `"Units" : "imperial"` to your `.wegorc`. There is also the ability to mix and match wind speed and temperature units, via `"TempUnit"` and `"WindUnit"`.
    
 ##License
 
