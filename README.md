@@ -19,7 +19,7 @@ wego is a weather client for the terminal.
 ##Dependencies
 
 * Working Go environment
-* utf-8 terminal with 256 colors
+* utf-8 terminal with 256 colors (I use the dejavu font)
 * A worldweatheronline.com API key (see Setup below)
 
 ##Setup
