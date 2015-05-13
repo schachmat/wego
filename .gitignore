@@ -2,6 +2,7 @@
 *.o
 *.a
 *.so
+/wego
 
 # Folders
 _obj
@@ -22,3 +23,7 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# vim temp files
+*~
+*.swp
