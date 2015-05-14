@@ -41,6 +41,14 @@ wego is a weather client for the terminal.
    `wego 4 London` or `wego London 4` (the ordering of arguments makes no
    difference) to get the forecast for the current and the next 3 days.
 
+## Example configuration
+
+  {
+    "APIKey": "d2945e1731314c1651aeee1539547",
+    "City": "Copenhagen",
+    "Imperial": false
+  }
+
 ##Todo
 
 * store values affected by metric/imperial conversion as float32 internally
