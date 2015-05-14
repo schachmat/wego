@@ -27,10 +27,10 @@ wego is a weather client for the terminal.
 1. To Install the wego binary into your `$GOPATH` as usual, run:
    `go get github.com/schachmat/wego`
 2. Run `wego` once, by default it will be in: 
-   `cd src/github.com/schachmat/wego`
-   `go install`
-   `cd bin/`
-   `./wego`
+  * `cd src/github.com/schachmat/wego`
+  * `go install`
+  * `cd bin/`
+  * `./wego`
    You will get an error message, but the config file will be generated for you as well.
 
 3. If you don't have the necessary API key yet, you can [register
