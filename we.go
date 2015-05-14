@@ -478,9 +478,10 @@ func init() {
 func main() {
 	var numdays = 3
 
-	if len(config.APIKey) > 0 {
-		params = append(params, "key="+config.APIKey)
+	if len(config.APIKey) == 0 {
+		log.Fatal("No API key specified. Setup instructions are in the README.")
 	}
+	params = append(params, "key="+config.APIKey)
 
 	for _, arg := range os.Args[1:] {
 		if v, err := strconv.Atoi(arg); err == nil {
