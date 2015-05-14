@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -267,6 +268,12 @@ var (
 		"\033[38;5;251m  _ - _ - _  \033[0m",
 		"\033[38;5;251m _ - _ - _ - \033[0m",
 		"             "}
+	timeNames = map[string]string{
+		"1000": "Morning",
+		"1300": " Noon  ",
+		"1900": "Evening",
+		"2200": " Night ",
+	}
 )
 
 const (
@@ -424,36 +431,90 @@ func formatCond(cur []string, c cond) (ret []string) {
 	return
 }
 
+func verticalDisplay(display []string, name string, first bool, last bool) (ret []string) {
+	ret = make([]string, 0)
+	if first {
+		ret = append(ret, "┌──────────────────────────────┐")
+	} else {
+		ret = append(ret, "├──────────────────────────────┤")
+	}
+	ret = append(ret, fmt.Sprintf("│           %s            │", name))
+	ret = append(ret, "├──────────────────────────────┤")
+	for _, line := range display {
+		ret = append(ret, fmt.Sprintf("|%s|", line))
+	}
+	if last {
+		ret = append(ret, "└──────────────────────────────┘")
+	}
+	return ret
+}
+
+func horizontalDisplay(display []string, name string, first bool, last bool) (ret []string) {
+	ret = make([]string, 9)
+	if first {
+		ret[0] += "┌"
+		ret[1] += "│"
+		ret[2] += "├"
+		ret[8] += "└"
+	} else {
+		ret[0] += "┬"
+		ret[1] += "│"
+		ret[2] += "┼"
+		ret[8] += "┴"
+	}
+	ret[0] += "──────────────────────────────"
+	ret[1] += fmt.Sprintf("           %s            ", name)
+	ret[2] += "──────────────────────────────"
+	for i, _ := range display {
+		if first {
+			ret[i+3] += "│"
+		}
+		ret[i+3] += display[i]
+		ret[i+3] += "│"
+	}
+	ret[8] += "──────────────────────────────"
+	if last {
+		ret[0] += "┐"
+		ret[1] += "│"
+		ret[2] += "┤"
+		ret[8] += "┘"
+	}
+	return ret
+}
+
 func printDay(w weather) (ret []string) {
 	hourly := w.Hourly
-	ret = make([]string, 5)
-	for i := range ret {
-		ret[i] = "│"
-	}
+	names := make([]string, 0, 4)
+	displays := make([][]string, 0, 4)
 	for _, h := range hourly {
-		if h.Time == "0" || h.Time == "100" ||
-			h.Time == "200" || h.Time == "300" || h.Time == "400" ||
-			h.Time == "500" || h.Time == "600" || h.Time == "700" ||
-			h.Time == "1400" || h.Time == "1500" || h.Time == "1600" ||
-			h.Time == "2300" {
+		name, found := timeNames[h.Time]
+		if !found {
 			continue
 		}
-		ret = formatCond(ret, h)
-		for i := range ret {
-			ret[i] = ret[i] + "│"
-		}
+		names = append(names, name)
+		displays = append(displays, formatCond(make([]string, 5), h))
 	}
 	d, _ := time.Parse("2006-01-02", w.Date)
-	dateFmt := "┤ " + d.Format("Mon 02. Jan") + " ├"
-	ret = append([]string{
-		"                                                       ┌─────────────┐                                                       ",
-		"┌──────────────────────────────┬───────────────────────" + dateFmt + "───────────────────────┬──────────────────────────────┐",
-		"│           Morning            │             Noon      └──────┬──────┘    Evening            │            Night             │",
-		"├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤"},
-		ret...)
-	return append(ret,
-		"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
-	return
+	dateFmt := "" + d.Format("Mon 02. Jan") + ""
+
+	width, _, _ := terminal.GetSize(0)
+	if width < 125 {
+		ret = make([]string, 0)
+		ret = append(ret, "")
+		ret = append(ret, fmt.Sprintf("%21s", dateFmt))
+		for i, display := range displays {
+			ret = append(ret, verticalDisplay(display, names[i], i == 0, i == len(displays)-1)...)
+		}
+	} else {
+		ret = make([]string, 11)
+		ret[1] = fmt.Sprintf("%68s", dateFmt)
+		for i, display := range displays {
+			for j, line := range horizontalDisplay(display, names[i], i == 0, i == len(displays)-1) {
+				ret[j+2] += line
+			}
+		}
+	}
+	return ret
 }
 
 func init() {
