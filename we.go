@@ -20,6 +20,7 @@ type configuration struct {
 	APIKey string
 	City   string
 	Imperial bool
+	Narrow bool
 }
 
 type cond struct {
@@ -397,7 +398,7 @@ func formatCond(cur []string, c cond) (ret []string) {
 	return
 }
 
-func printDay(w weather) (ret []string) {
+func printDayWide(w weather) (ret []string) {
 	hourly := w.Hourly
 	ret = make([]string, 5)
 	for i := range ret {
@@ -426,7 +427,53 @@ func printDay(w weather) (ret []string) {
 		ret...)
 	return append(ret,
 		"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
-	return
+}
+
+func printDayNarrow(w weather) (ret []string) {
+	hourly := w.Hourly
+	forenoon := make([]string, 5)
+	afternoon := make([]string, 5)
+	for i := range forenoon {
+		forenoon[i] = "│"
+		afternoon[i] = "│"
+	}
+	for _, h := range hourly {
+		if h.Time == "1000" || h.Time == "1300" {
+			forenoon = formatCond(forenoon, h)
+			for i := range forenoon {
+				forenoon[i] = forenoon[i] + "│"
+			}
+		} else if h.Time == "1900" || h.Time == "2200" {
+			afternoon = formatCond(afternoon, h)
+			for i := range afternoon {
+				afternoon[i] = afternoon[i] + "│"
+			}
+		}
+	}
+	d, _ := time.Parse("2006-01-02", w.Date)
+	dateFmt := "┤ " + d.Format("Mon 02. Jan") + " ├"
+	ret = append([]string{
+		"                        ┌─────────────┐                        ",
+		"┌───────────────────────" + dateFmt + "───────────────────────┐",
+		"│           Morning     └──────┬──────┘      Noon             │",
+		"├──────────────────────────────┼──────────────────────────────┤"},
+		forenoon...)
+	ret = append(ret,
+		"├──────────────────────────────┼──────────────────────────────┤",
+		"│           Evening            │             Night            │",
+		"├──────────────────────────────┼──────────────────────────────┤")
+	ret = append(ret,
+		afternoon...)
+	return append(ret,
+		"└──────────────────────────────┴──────────────────────────────┘")
+}
+
+func printDay(w weather) (ret []string) {
+	if config.Narrow {
+		return printDayNarrow(w)
+	} else {
+		return printDayWide(w)
+	}
 }
 
 func init() {
@@ -438,6 +485,7 @@ func init() {
 	config.APIKey = ""
 	config.City = "New York"
 	config.Imperial = false
+	config.Narrow = false
 	err = configload()
 	if _, ok := err.(*os.PathError); ok {
 		if err := configsave(); err != nil {
