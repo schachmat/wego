@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/mattn/go-colorable"
 	"io/ioutil"
-	"time"
 	"log"
 	"net/http"
 	"net/url"
@@ -14,11 +13,12 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type configuration struct {
-	APIKey string
-	City   string
+	APIKey   string
+	City     string
 	Imperial bool
 }
 
@@ -31,9 +31,9 @@ type cond struct {
 	VisibleDistKM  int     `json:"visibility,string"`
 	WeatherCode    int     `json:"weatherCode,string"`
 	WeatherDesc    []struct{ Value string }
-	WindGustKmph   int    `json:",string"`
+	WindGustKmph   int `json:",string"`
 	Winddir16Point string
-	WindspeedKmph  int    `json:"windspeedKmph,string"`
+	WindspeedKmph  int `json:"windspeedKmph,string"`
 }
 
 type astro struct {
@@ -53,15 +53,15 @@ type weather struct {
 
 type loc struct {
 	Query string `json:"query"`
-	Type string `json:"type"`
+	Type  string `json:"type"`
 }
 
 type resp struct {
 	Data struct {
-		Cur     []cond     `json:"current_condition"`
-		Err     []struct{Msg string} `json:"error"`
-		Req     []loc `json:"request"`
-		Weather []weather  `json:"weather"`
+		Cur     []cond                 `json:"current_condition"`
+		Err     []struct{ Msg string } `json:"error"`
+		Req     []loc                  `json:"request"`
+		Weather []weather              `json:"weather"`
 	} `json:"data"`
 }
 
@@ -89,19 +89,19 @@ var (
 	}
 	unitRain = map[bool]string{
 		false: "mm",
-		true: "in",
+		true:  "in",
 	}
 	unitTemp = map[bool]string{
 		false: "C",
-		true: "F",
+		true:  "F",
 	}
 	unitVis = map[bool]string{
 		false: "km",
-		true: "mi",
+		true:  "mi",
 	}
 	unitWind = map[bool]string{
 		false: "km/h",
-		true: "mph",
+		true:  "mph",
 	}
 	codes = map[int][]string{
 		113: iconSunny,
@@ -294,25 +294,44 @@ func formatTemp(c cond) string {
 	color := func(temp int) string {
 		var col = 21
 		switch temp {
-		case -15, -14, -13: col = 27
-		case -12, -11, -10: col = 33
-		case -9, -8, -7: col = 39
-		case -6, -5, -4: col = 45
-		case -3, -2, -1: col = 51
-		case 0, 1: col = 50
-		case 2, 3: col = 49
-		case 4, 5: col = 48
-		case 6, 7: col = 47
-		case 8, 9: col = 46
-		case 10, 11, 12: col = 82
-		case 13, 14, 15: col = 118
-		case 16, 17, 18: col = 154
-		case 19, 20, 21: col = 190
-		case 22, 23, 24: col = 226
-		case 25, 26, 27: col = 220
-		case 28, 29, 30: col = 214
-		case 31, 32, 33: col = 208
-		case 34, 35, 36: col = 202
+		case -15, -14, -13:
+			col = 27
+		case -12, -11, -10:
+			col = 33
+		case -9, -8, -7:
+			col = 39
+		case -6, -5, -4:
+			col = 45
+		case -3, -2, -1:
+			col = 51
+		case 0, 1:
+			col = 50
+		case 2, 3:
+			col = 49
+		case 4, 5:
+			col = 48
+		case 6, 7:
+			col = 47
+		case 8, 9:
+			col = 46
+		case 10, 11, 12:
+			col = 82
+		case 13, 14, 15:
+			col = 118
+		case 16, 17, 18:
+			col = 154
+		case 19, 20, 21:
+			col = 190
+		case 22, 23, 24:
+			col = 226
+		case 25, 26, 27:
+			col = 220
+		case 28, 29, 30:
+			col = 214
+		case 31, 32, 33:
+			col = 208
+		case 34, 35, 36:
+			col = 202
 		default:
 			if temp > 0 {
 				col = 196
@@ -320,7 +339,7 @@ func formatTemp(c cond) string {
 		}
 		tempUnit := float32(temp)
 		if config.Imperial {
-			tempUnit = float32(temp) * 1.8 + 32.0
+			tempUnit = float32(temp)*1.8 + 32.0
 		}
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(tempUnit))
 	}
@@ -337,15 +356,24 @@ func formatWind(c cond) string {
 	color := func(spd int) string {
 		var col = 46
 		switch spd {
-		case 1, 2, 3: col = 82
-		case 4, 5, 6: col = 118
-		case 7, 8, 9: col = 154
-		case 10, 11, 12: col = 190
-		case 13, 14, 15: col = 226
-		case 16, 17, 18, 19: col = 220
-		case 20, 21, 22, 23: col = 214
-		case 24, 25, 26, 27: col = 208
-		case 28, 29, 30, 31: col = 202
+		case 1, 2, 3:
+			col = 82
+		case 4, 5, 6:
+			col = 118
+		case 7, 8, 9:
+			col = 154
+		case 10, 11, 12:
+			col = 190
+		case 13, 14, 15:
+			col = 226
+		case 16, 17, 18, 19:
+			col = 220
+		case 20, 21, 22, 23:
+			col = 214
+		case 24, 25, 26, 27:
+			col = 208
+		case 28, 29, 30, 31:
+			col = 202
 		default:
 			if spd > 0 {
 				col = 196
@@ -405,10 +433,10 @@ func printDay(w weather) (ret []string) {
 	}
 	for _, h := range hourly {
 		if h.Time == "0" || h.Time == "100" ||
-		h.Time == "200" || h.Time == "300" || h.Time == "400" ||
-		h.Time == "500" || h.Time == "600" || h.Time == "700" ||
-		h.Time == "1400" || h.Time == "1500" || h.Time == "1600" ||
-		h.Time == "2300" {
+			h.Time == "200" || h.Time == "300" || h.Time == "400" ||
+			h.Time == "500" || h.Time == "600" || h.Time == "700" ||
+			h.Time == "1400" || h.Time == "1500" || h.Time == "1600" ||
+			h.Time == "2300" {
 			continue
 		}
 		ret = formatCond(ret, h)
@@ -451,11 +479,13 @@ func init() {
 func main() {
 	var numdays = 3
 
-	if len(config.APIKey) > 0 {
-		params = append(params, "key="+config.APIKey)
+	if len(config.APIKey) == 0 {
+		log.Fatal("No API key specified. Setup instructions available in readme.")
 	}
 
-	for _, arg := range(os.Args[1:]) {
+	params = append(params, "key="+config.APIKey)
+
+	for _, arg := range os.Args[1:] {
 		if v, err := strconv.Atoi(arg); err == nil {
 			numdays = v
 		} else {
@@ -467,11 +497,11 @@ func main() {
 		params = append(params, "q="+url.QueryEscape(config.City))
 	}
 	params = append(params, "format=json")
-	params = append(params, "num_of_days=" + strconv.Itoa(numdays))
+	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
 	params = append(params, "lang=de")
 
-//	fmt.Fprintln(os.Stderr, params)
+	//	fmt.Fprintln(os.Stderr, params)
 
 	res, err := http.Get(uri + strings.Join(params, "&"))
 	if err != nil {
@@ -483,7 +513,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-//	fmt.Println(string(body))
+	//	fmt.Println(string(body))
 
 	var r resp
 	if err = json.Unmarshal(body, &r); err != nil {
