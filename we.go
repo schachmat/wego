@@ -534,6 +534,9 @@ func main() {
 		fmt.Fprintln(stdout, val)
 	}
 
+	if numdays == 0 {
+		return
+	}
 	if r.Data.Weather == nil {
 		log.Fatal("No detailed weather forecast available.")
 	}
