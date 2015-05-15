@@ -347,9 +347,8 @@ func formatTemp(c cond) string {
 		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(c.TempC), unitTemp[config.Imperial])[:48]
 	} else if c.FeelsLikeC > c.TempC {
 		return fmt.Sprintf("%s – %s °%s         ", color(c.TempC), color(c.FeelsLikeC), unitTemp[config.Imperial])[:48]
-	} else {
-		return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
 	}
+	return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
 }
 
 func formatWind(c cond) string {
