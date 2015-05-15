@@ -472,8 +472,6 @@ func main() {
 	params = append(params, "tp=3")
 	if config.Lang != "" {
 		params = append(params, "lang=" + config.Lang)
-	} else {
-		params = append(params, "lang=de")
 	}
 
 //	fmt.Fprintln(os.Stderr, params)
