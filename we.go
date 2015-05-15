@@ -6,6 +6,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -28,7 +29,7 @@ type cond struct {
 	FeelsLikeC     int     `json:",string"`
 	PrecipMM       float32 `json:"precipMM,string"`
 	TempC          int     `json:"tempC,string"`
-	Time           string  `json:"time"`
+	Time           int     `json:"time,string"`
 	VisibleDistKM  int     `json:"visibility,string"`
 	WeatherCode    int     `json:"weatherCode,string"`
 	WeatherDesc    []struct{ Value string }
@@ -104,7 +105,8 @@ var (
 		false: "km/h",
 		true:  "mph",
 	}
-	codes = map[int][]string{
+	slotTimes = [slotcount]int{9 * 60, 12 * 60, 18 * 60, 22 * 60}
+	codes     = map[int][]string{
 		113: iconSunny,
 		116: iconPartlyCloudy,
 		119: iconCloudy,
@@ -272,7 +274,8 @@ var (
 )
 
 const (
-	uri = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
+	uri       = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
+	slotcount = 4
 )
 
 func configload() error {
@@ -435,19 +438,26 @@ func printDay(w weather) (ret []string) {
 	for i := range ret {
 		ret[i] = "│"
 	}
+
+	// find hourly data which fits the desired times of day best
+	var slots [slotcount]cond
 	for _, h := range hourly {
-		if h.Time == "0" || h.Time == "100" ||
-			h.Time == "200" || h.Time == "300" || h.Time == "400" ||
-			h.Time == "500" || h.Time == "600" || h.Time == "700" ||
-			h.Time == "1400" || h.Time == "1500" || h.Time == "1600" ||
-			h.Time == "2300" {
-			continue
+		c := int(math.Mod(float64(h.Time), 100)) + 60*(h.Time/100)
+		for i, s := range slots {
+			if math.Abs(float64(c-slotTimes[i])) < math.Abs(float64(s.Time-slotTimes[i])) {
+				h.Time = c
+				slots[i] = h
+			}
 		}
-		ret = formatCond(ret, h)
+	}
+
+	for _, s := range slots {
+		ret = formatCond(ret, s)
 		for i := range ret {
 			ret[i] = ret[i] + "│"
 		}
 	}
+
 	d, _ := time.Parse("2006-01-02", w.Date)
 	dateFmt := "┤ " + d.Format("Mon 02. Jan") + " ├"
 	ret = append([]string{
