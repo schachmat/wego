@@ -20,6 +20,7 @@ type configuration struct {
 	APIKey string
 	City   string
 	Imperial bool
+	Lang string
 }
 
 type cond struct {
@@ -469,7 +470,11 @@ func main() {
 	params = append(params, "format=json")
 	params = append(params, "num_of_days=" + strconv.Itoa(numdays))
 	params = append(params, "tp=3")
-	params = append(params, "lang=de")
+	if config.Lang != "" {
+		params = append(params, "lang=" + config.Lang)
+	} else {
+		params = append(params, "lang=de")
+	}
 
 //	fmt.Fprintln(os.Stderr, params)
 
