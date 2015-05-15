@@ -22,6 +22,7 @@ type configuration struct {
 	APIKey   string
 	City     string
 	Imperial bool
+	Lang     string
 }
 
 type cond struct {
@@ -490,11 +491,12 @@ func init() {
 	config.APIKey = ""
 	config.City = "New York"
 	config.Imperial = false
+	config.Lang = "en"
 	err := configload()
 	if _, ok := err.(*os.PathError); ok {
 		log.Printf("No config file found. Creating %s ...", configpath)
-		if err := configsave(); err != nil {
-			log.Fatal(err)
+		if err2 := configsave(); err2 != nil {
+			log.Fatal(err2)
 		}
 	} else if err != nil {
 		log.Fatalf("could not parse %v: %v", configpath, err)
@@ -523,7 +525,9 @@ func main() {
 	params = append(params, "format=json")
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
-	params = append(params, "lang=de")
+	if config.Lang != "" {
+		params = append(params, "lang="+config.Lang)
+	}
 
 	// fmt.Fprintln(os.Stderr, params)
 
