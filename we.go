@@ -439,6 +439,7 @@ func init() {
 	config.APIKey = ""
 	config.City = "New York"
 	config.Imperial = false
+	config.Lang = "en"
 	err = configload()
 	if _, ok := err.(*os.PathError); ok {
 		if err := configsave(); err != nil {
