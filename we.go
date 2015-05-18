@@ -36,104 +36,110 @@ func configsave() error {
 	return err
 }
 
+func tempColor(temp int) string {
+	var col int
+	switch temp {
+	case -15, -14, -13:
+		col = 27
+	case -12, -11, -10:
+		col = 33
+	case -9, -8, -7:
+		col = 39
+	case -6, -5, -4:
+		col = 45
+	case -3, -2, -1:
+		col = 51
+	case 0, 1:
+		col = 50
+	case 2, 3:
+		col = 49
+	case 4, 5:
+		col = 48
+	case 6, 7:
+		col = 47
+	case 8, 9:
+		col = 46
+	case 10, 11, 12:
+		col = 82
+	case 13, 14, 15:
+		col = 118
+	case 16, 17, 18:
+		col = 154
+	case 19, 20, 21:
+		col = 190
+	case 22, 23, 24:
+		col = 226
+	case 25, 26, 27:
+		col = 220
+	case 28, 29, 30:
+		col = 214
+	case 31, 32, 33:
+		col = 208
+	case 34, 35, 36:
+		col = 202
+	default:
+		if temp > 0 {
+			col = 196
+		} else {
+			col = 21
+		}
+	}
+	tempUnit := float32(temp)
+	if config.Imperial {
+		tempUnit = float32(temp)*1.8 + 32.0
+	}
+	return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(tempUnit))
+}
+
 func formatTemp(c cond) string {
-	color := func(temp int) string {
-		var col = 21
-		switch temp {
-		case -15, -14, -13:
-			col = 27
-		case -12, -11, -10:
-			col = 33
-		case -9, -8, -7:
-			col = 39
-		case -6, -5, -4:
-			col = 45
-		case -3, -2, -1:
-			col = 51
-		case 0, 1:
-			col = 50
-		case 2, 3:
-			col = 49
-		case 4, 5:
-			col = 48
-		case 6, 7:
-			col = 47
-		case 8, 9:
-			col = 46
-		case 10, 11, 12:
-			col = 82
-		case 13, 14, 15:
-			col = 118
-		case 16, 17, 18:
-			col = 154
-		case 19, 20, 21:
-			col = 190
-		case 22, 23, 24:
-			col = 226
-		case 25, 26, 27:
-			col = 220
-		case 28, 29, 30:
-			col = 214
-		case 31, 32, 33:
-			col = 208
-		case 34, 35, 36:
-			col = 202
-		default:
-			if temp > 0 {
-				col = 196
-			}
-		}
-		tempUnit := float32(temp)
-		if config.Imperial {
-			tempUnit = float32(temp)*1.8 + 32.0
-		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(tempUnit))
-	}
 	if c.FeelsLikeC < c.TempC {
-		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(c.TempC), unitTemp[config.Imperial])[:48]
+		return fmt.Sprintf("%s – %s °%s         ", tempColor(c.FeelsLikeC), tempColor(c.TempC), unitTemp[config.Imperial])[:48]
 	} else if c.FeelsLikeC > c.TempC {
-		return fmt.Sprintf("%s – %s °%s         ", color(c.TempC), color(c.FeelsLikeC), unitTemp[config.Imperial])[:48]
+		return fmt.Sprintf("%s – %s °%s         ", tempColor(c.TempC), tempColor(c.FeelsLikeC), unitTemp[config.Imperial])[:48]
 	}
-	return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
+	return fmt.Sprintf("%s °%s            ", tempColor(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
+}
+
+func windColor(spd int) string {
+	var col int
+	switch spd {
+	case 1, 2, 3:
+		col = 82
+	case 4, 5, 6:
+		col = 118
+	case 7, 8, 9:
+		col = 154
+	case 10, 11, 12:
+		col = 190
+	case 13, 14, 15:
+		col = 226
+	case 16, 17, 18, 19:
+		col = 220
+	case 20, 21, 22, 23:
+		col = 214
+	case 24, 25, 26, 27:
+		col = 208
+	case 28, 29, 30, 31:
+		col = 202
+	default:
+		if spd > 0 {
+			col = 196
+		} else {
+			col = 46
+		}
+	}
+	spdUnit := float32(spd)
+	if config.Imperial {
+		spdUnit = float32(spd) / 1.609
+	}
+	return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spdUnit))
 }
 
 func formatWind(c cond) string {
-	color := func(spd int) string {
-		var col = 46
-		switch spd {
-		case 1, 2, 3:
-			col = 82
-		case 4, 5, 6:
-			col = 118
-		case 7, 8, 9:
-			col = 154
-		case 10, 11, 12:
-			col = 190
-		case 13, 14, 15:
-			col = 226
-		case 16, 17, 18, 19:
-			col = 220
-		case 20, 21, 22, 23:
-			col = 214
-		case 24, 25, 26, 27:
-			col = 208
-		case 28, 29, 30, 31:
-			col = 202
-		default:
-			if spd > 0 {
-				col = 196
-			}
-		}
-		spdUnit := float32(spd)
-		if config.Imperial {
-			spdUnit = float32(spd) / 1.609
-		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spdUnit))
-	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial])[:57]
+		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], windColor(c.WindspeedKmph), windColor(c.WindGustKmph), unitWind[config.Imperial])[:57]
 	}
-	return fmt.Sprintf("%s %s %s        ", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial])[:40]
+	return fmt.Sprintf("%s %s %s        ", windDir[c.Winddir16Point], windColor(c.WindspeedKmph), unitWind[config.Imperial])[:40]
 }
 
 func formatVisibility(c cond) string {
