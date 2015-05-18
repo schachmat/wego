@@ -48,6 +48,8 @@ wego is a weather client for the terminal.
 
 * store values affected by metric/imperial conversion as float32 internally
 * implement SI units
+* use objx instead of custom marshall function to localize the output (and
+  handle the whole json response in general)
 
 ##License
 

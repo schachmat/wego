@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/mattn/go-colorable"
@@ -503,6 +504,62 @@ func init() {
 	}
 }
 
+func marshalLang(rv map[string]interface{}, r *resp) error {
+	if data, ok := rv["data"].(map[string]interface{}); ok {
+		if ccs, ok := data["current_condition"].([]interface{}); ok {
+			for _, cci := range ccs {
+				cc, ok := cci.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				langs, ok := cc["lang_"+config.Lang].([]interface{})
+				if !ok || len(langs) == 0 {
+					continue
+				}
+				weatherDesc, ok := cc["weatherDesc"].([]interface{})
+				if !ok || len(weatherDesc) == 0 {
+					continue
+				}
+				weatherDesc[0] = langs[0]
+			}
+		}
+		if ws, ok := data["weather"].([]interface{}); ok {
+			for _, wi := range ws {
+				w, ok := wi.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if hs, ok := w["hourly"].([]interface{}); ok {
+					for _, hi := range hs {
+						h, ok := hi.(map[string]interface{})
+						if !ok {
+							continue
+						}
+						langs, ok := h["lang_"+config.Lang].([]interface{})
+						if !ok || len(langs) == 0 {
+							continue
+						}
+						weatherDesc, ok := h["weatherDesc"].([]interface{})
+						if !ok || len(weatherDesc) == 0 {
+							continue
+						}
+						weatherDesc[0] = langs[0]
+					}
+				}
+			}
+		}
+	}
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(rv); err != nil {
+		return err
+	} else {
+		if err = json.NewDecoder(&buf).Decode(r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	var numdays = 3
 
@@ -544,8 +601,18 @@ func main() {
 	// fmt.Println(string(body))
 
 	var r resp
-	if err = json.Unmarshal(body, &r); err != nil {
-		log.Println(err)
+	if config.Lang == "" {
+		if err = json.Unmarshal(body, &r); err != nil {
+			log.Println(err)
+		}
+	} else {
+		var rv map[string]interface{}
+		if err = json.Unmarshal(body, &rv); err != nil {
+			log.Println(err)
+		}
+		if err = marshalLang(rv, &r); err != nil {
+			log.Println(err)
+		}
 	}
 
 	if r.Data.Req == nil || len(r.Data.Req) < 1 {
