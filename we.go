@@ -16,10 +16,6 @@ import (
 	"time"
 )
 
-
-
-
-
 const (
 	uri = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
 )
