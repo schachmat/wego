@@ -21,7 +21,7 @@ type configuration struct {
 	APIKey   string
 	City     string
 	Imperial bool
-	Lang string
+	Lang     string
 }
 
 type cond struct {
@@ -486,7 +486,7 @@ func marshalLang(rv map[string]interface{}, r *resp) error {
 				if !ok {
 					continue
 				}
-				langs, ok := cc["lang_" + config.Lang].([]interface{})
+				langs, ok := cc["lang_"+config.Lang].([]interface{})
 				if !ok || len(langs) == 0 {
 					continue
 				}
@@ -532,7 +532,7 @@ func main() {
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
 	if config.Lang != "" {
-		params = append(params, "lang=" + config.Lang)
+		params = append(params, "lang="+config.Lang)
 	}
 
 	// fmt.Fprintln(os.Stderr, params)
