@@ -489,7 +489,7 @@ func main() {
 	params = append(params, "key="+config.APIKey)
 
 	for _, arg := range os.Args[1:] {
-		if v, err := strconv.Atoi(arg); err == nil {
+		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
 			numdays = v
 		} else {
 			config.City = arg
