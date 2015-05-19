@@ -481,8 +481,8 @@ func init() {
 func marshalLang(rv map[string]interface{}, r *resp) error {
 	if data, ok := rv["data"].(map[string]interface{}); ok {
 		if ccs, ok := data["current_condition"].([]interface{}); ok {
-			for i := 0; i < len(ccs); i++ {
-				cc, ok := ccs[i].(map[string]interface{})
+			for _, cci := range ccs {
+				cc, ok := cci.(map[string]interface{})
 				if !ok {
 					continue
 				}
