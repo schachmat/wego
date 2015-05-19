@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type configuration struct {
@@ -416,7 +417,11 @@ func formatCond(cur []string, c cond) (ret []string) {
 	} else {
 		icon = i
 	}
-	ret = append(ret, fmt.Sprintf("%v %v %-15.15v", cur[0], icon[0], c.WeatherDesc[0].Value))
+	desc := fmt.Sprintf("%-15.15v", c.WeatherDesc[0].Value)
+	if lastRune, size := utf8.DecodeLastRuneInString(desc); lastRune != ' ' {
+		desc = desc[:len(desc)-size] + "…"
+	}
+	ret = append(ret, fmt.Sprintf("%v %v %v", cur[0], icon[0], desc))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon[1], formatTemp(c)))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[2], icon[2], formatWind(c)))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[3], icon[3], formatVisibility(c)))
