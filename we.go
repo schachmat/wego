@@ -418,7 +418,7 @@ func formatRain(c cond) string {
 	return fmt.Sprintf("%.1f %s            ", rainUnit, unitRain[config.Imperial])[:15]
 }
 
-func formatCond(cur []string, c cond) (ret []string) {
+func formatCond(cur []string, c cond, current bool) (ret []string) {
 	var icon []string
 	if i, ok := codes[c.WeatherCode]; !ok {
 		icon = iconUnknown
@@ -426,7 +426,9 @@ func formatCond(cur []string, c cond) (ret []string) {
 		icon = i
 	}
 	desc := fmt.Sprintf("%-15.15v", c.WeatherDesc[0].Value)
-	if lastRune, size := utf8.DecodeLastRuneInString(desc); lastRune != ' ' {
+	if current {
+		desc = c.WeatherDesc[0].Value
+	} else if lastRune, size := utf8.DecodeLastRuneInString(desc); lastRune != ' ' {
 		desc = desc[:len(desc)-size] + "…"
 	}
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[0], icon[0], desc))
@@ -457,7 +459,7 @@ func printDay(w weather) (ret []string) {
 	}
 
 	for _, s := range slots {
-		ret = formatCond(ret, s)
+		ret = formatCond(ret, s, false)
 		for i := range ret {
 			ret[i] = ret[i] + "│"
 		}
@@ -550,7 +552,7 @@ func main() {
 	if r.Data.Cur == nil || len(r.Data.Cur) < 1 {
 		log.Fatal("No weather data available.")
 	}
-	out := formatCond(make([]string, 5), r.Data.Cur[0])
+	out := formatCond(make([]string, 5), r.Data.Cur[0], true)
 	for _, val := range out {
 		fmt.Fprintln(stdout, val)
 	}
