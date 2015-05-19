@@ -29,6 +29,7 @@ type cond struct {
 	FeelsLikeC     int     `json:",string"`
 	PrecipMM       float32 `json:"precipMM,string"`
 	TempC          int     `json:"tempC,string"`
+	TempC2         int     `json:"temp_C,string"`
 	Time           int     `json:"time,string"`
 	VisibleDistKM  int     `json:"visibility,string"`
 	WeatherCode    int     `json:"weatherCode,string"`
@@ -347,10 +348,14 @@ func formatTemp(c cond) string {
 		}
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(tempUnit))
 	}
-	if c.FeelsLikeC < c.TempC {
-		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(c.TempC), unitTemp[config.Imperial])[:48]
-	} else if c.FeelsLikeC > c.TempC {
-		return fmt.Sprintf("%s – %s °%s         ", color(c.TempC), color(c.FeelsLikeC), unitTemp[config.Imperial])[:48]
+	t := c.TempC
+	if t == 0 {
+		t = c.TempC2
+	}
+	if c.FeelsLikeC < t {
+		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(t), unitTemp[config.Imperial])[:48]
+	} else if c.FeelsLikeC > t {
+		return fmt.Sprintf("%s – %s °%s         ", color(t), color(c.FeelsLikeC), unitTemp[config.Imperial])[:48]
 	}
 	return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
 }
