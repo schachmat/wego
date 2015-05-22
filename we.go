@@ -489,6 +489,7 @@ func init() {
 	config.Imperial = false
 	err = configload()
 	if _, ok := err.(*os.PathError); ok {
+		log.Printf("No config file found. Creating %s ...", configpath)
 		if err := configsave(); err != nil {
 			log.Fatal(err)
 		}
