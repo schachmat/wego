@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/mattn/go-colorable"
@@ -22,6 +23,7 @@ type configuration struct {
 	APIKey   string
 	City     string
 	Imperial bool
+	Lang     string
 }
 
 type cond struct {
@@ -487,6 +489,7 @@ func init() {
 	config.APIKey = ""
 	config.City = "New York"
 	config.Imperial = false
+	config.Lang = "en"
 	err = configload()
 	if _, ok := err.(*os.PathError); ok {
 		log.Printf("No config file found. Creating %s ...", configpath)
@@ -496,6 +499,37 @@ func init() {
 	} else if err != nil {
 		log.Fatalf("could not parse %v: %v", configpath, err)
 	}
+}
+
+func marshalLang(rv map[string]interface{}, r *resp) error {
+	if data, ok := rv["data"].(map[string]interface{}); ok {
+		if ccs, ok := data["current_condition"].([]interface{}); ok {
+			for _, cci := range ccs {
+				cc, ok := cci.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				langs, ok := cc["lang_"+config.Lang].([]interface{})
+				if !ok || len(langs) == 0 {
+					continue
+				}
+				weatherDesc, ok := cc["weatherDesc"].([]interface{})
+				if !ok || len(weatherDesc) == 0 {
+					continue
+				}
+				weatherDesc[0] = langs[0]
+			}
+		}
+	}
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(rv); err != nil {
+		return err
+	} else {
+		if err = json.NewDecoder(&buf).Decode(r); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func main() {
@@ -520,7 +554,9 @@ func main() {
 	params = append(params, "format=json")
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
-	params = append(params, "lang=de")
+	if config.Lang != "" {
+		params = append(params, "lang="+config.Lang)
+	}
 
 	// fmt.Fprintln(os.Stderr, params)
 
@@ -537,8 +573,18 @@ func main() {
 	// fmt.Println(string(body))
 
 	var r resp
-	if err = json.Unmarshal(body, &r); err != nil {
-		log.Println(err)
+	if config.Lang == "" {
+		if err = json.Unmarshal(body, &r); err != nil {
+			log.Println(err)
+		}
+	} else {
+		var rv map[string]interface{}
+		if err = json.Unmarshal(body, &rv); err != nil {
+			log.Println(err)
+		}
+		if err = marshalLang(rv, &r); err != nil {
+			log.Println(err)
+		}
 	}
 
 	if r.Data.Req == nil || len(r.Data.Req) < 1 {
