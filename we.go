@@ -479,15 +479,18 @@ func printDay(w weather) (ret []string) {
 }
 
 func init() {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
+	configpath = os.Getenv("WEGORC")
+	if configpath == "" {
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatal(err)
+		}
+		configpath = path.Join(usr.HomeDir, ".wegorc")
 	}
-	configpath = path.Join(usr.HomeDir, ".wegorc")
 	config.APIKey = ""
 	config.City = "New York"
 	config.Imperial = false
-	err = configload()
+	err := configload()
 	if _, ok := err.(*os.PathError); ok {
 		log.Printf("No config file found. Creating %s ...", configpath)
 		if err := configsave(); err != nil {
