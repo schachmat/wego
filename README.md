@@ -13,6 +13,7 @@ wego is a weather client for the terminal.
   * precipitation amount and probability
 * ssl, so the NSA has a harder time learning where you live or plan to go
 * config file for default location which can be overridden by commandline
+* multi language support
 
 ![Screenshots](http://schachmat.github.io/wego/wego.gif)
 
