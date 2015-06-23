@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "crypto/sha512"
 	"encoding/json"
 	"fmt"
 	"github.com/mattn/go-colorable"
