@@ -21,10 +21,11 @@ import (
 )
 
 type configuration struct {
-	APIKey   string
-	City     string
-	Imperial bool
-	Lang     string
+	APIKey         string
+	City           string
+	Imperial       bool
+	Lang           string
+	WindDirLetters bool
 }
 
 type cond struct {
@@ -76,22 +77,22 @@ var (
 	configpath string
 	params     []string
 	windDir    = map[string]string{
-		"N":   "\033[1m↓\033[0m",
-		"NNE": "\033[1m↓\033[0m",
-		"NE":  "\033[1m↙\033[0m",
-		"ENE": "\033[1m↙\033[0m",
-		"E":   "\033[1m←\033[0m",
-		"ESE": "\033[1m←\033[0m",
-		"SE":  "\033[1m↖\033[0m",
-		"SSE": "\033[1m↖\033[0m",
-		"S":   "\033[1m↑\033[0m",
-		"SSW": "\033[1m↑\033[0m",
-		"SW":  "\033[1m↗\033[0m",
-		"WSW": "\033[1m↗\033[0m",
-		"W":   "\033[1m→\033[0m",
-		"WNW": "\033[1m→\033[0m",
-		"NW":  "\033[1m↘\033[0m",
-		"NNW": "\033[1m↘\033[0m",
+		"N":   "↓",
+		"NNE": "↓",
+		"NE":  "↙",
+		"ENE": "↙",
+		"E":   "←",
+		"ESE": "←",
+		"SE":  "↖",
+		"SSE": "↖",
+		"S":   "↑",
+		"SSW": "↑",
+		"SW":  "↗",
+		"WSW": "↗",
+		"W":   "→",
+		"WNW": "→",
+		"NW":  "↘",
+		"NNW": "↘",
 	}
 	unitRain = map[bool]string{
 		false: "mm",
@@ -372,6 +373,17 @@ func formatTemp(c cond) string {
 	return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
 }
 
+func formatWindDir(c cond) string {
+	rv := "\033[1m"
+	if (config.WindDirLetters) {
+		rv += c.Winddir16Point
+	} else {
+		rv += windDir[c.Winddir16Point]
+	}
+	rv += "\033[0m"
+	return rv
+}
+
 func formatWind(c cond) string {
 	color := func(spd int) string {
 		var col = 46
@@ -406,9 +418,9 @@ func formatWind(c cond) string {
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spdUnit))
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return pad(fmt.Sprintf("%s %s – %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial]), 53)
+		return pad(fmt.Sprintf("%s %s – %s %s", formatWindDir(c), color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial]), 53)
 	}
-	return pad(fmt.Sprintf("%s %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial]), 38)
+	return pad(fmt.Sprintf("%s %s %s", formatWindDir(c), color(c.WindspeedKmph), unitWind[config.Imperial]), 38)
 }
 
 func formatVisibility(c cond) string {
