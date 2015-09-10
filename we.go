@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -75,7 +76,7 @@ type resp struct {
 }
 
 var (
-	city       string
+	ansiEsc    *regexp.Regexp
 	config     configuration
 	configpath string
 	params     []string
@@ -302,6 +303,25 @@ func configsave() error {
 	return err
 }
 
+func pad(s string, mustLen int) (ret string) {
+	ret = s
+	realLen := utf8.RuneCountInString(ansiEsc.ReplaceAllLiteralString(s, ""))
+	delta := mustLen - realLen
+	if delta > 0 {
+		ret += "\033[0m" + strings.Repeat(" ", delta)
+	} else if delta < 0 {
+		toks := ansiEsc.Split(s, 2)
+		tokLen := utf8.RuneCountInString(toks[0])
+		esc := ansiEsc.FindString(s)
+		if tokLen > mustLen {
+			ret = fmt.Sprintf("%.*s\033[0m", mustLen, toks[0])
+		} else {
+			ret = fmt.Sprintf("%s%s%s", toks[0], esc, pad(toks[1], mustLen-tokLen))
+		}
+	}
+	return
+}
+
 func formatTemp(c cond) string {
 	color := func(temp int) string {
 		var col = 21
@@ -359,11 +379,11 @@ func formatTemp(c cond) string {
 		t = c.TempC2
 	}
 	if c.FeelsLikeC < t {
-		return fmt.Sprintf("%s – %s °%s         ", color(c.FeelsLikeC), color(t), unitTemp[config.Imperial])[:48]
+		return pad(fmt.Sprintf("%s – %s °%s", color(c.FeelsLikeC), color(t), unitTemp[config.Imperial]), 15)
 	} else if c.FeelsLikeC > t {
-		return fmt.Sprintf("%s – %s °%s         ", color(t), color(c.FeelsLikeC), unitTemp[config.Imperial])[:48]
+		return pad(fmt.Sprintf("%s – %s °%s", color(t), color(c.FeelsLikeC), unitTemp[config.Imperial]), 15)
 	}
-	return fmt.Sprintf("%s °%s            ", color(c.FeelsLikeC), unitTemp[config.Imperial])[:31]
+	return pad(fmt.Sprintf("%s °%s", color(c.FeelsLikeC), unitTemp[config.Imperial]), 15)
 }
 
 func formatWind(c cond) string {
@@ -399,16 +419,16 @@ func formatWind(c cond) string {
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial])[:57]
+		return pad(fmt.Sprintf("%s %s – %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial]), 15)
 	}
-	return fmt.Sprintf("%s %s %s        ", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial])[:40]
+	return pad(fmt.Sprintf("%s %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial]), 15)
 }
 
 func formatVisibility(c cond) string {
 	if config.Imperial {
 		c.VisibleDistKM = (c.VisibleDistKM * 621) / 1000
 	}
-	return fmt.Sprintf("%d %s            ", c.VisibleDistKM, unitVis[config.Imperial])[:15]
+	return pad(fmt.Sprintf("%d %s", c.VisibleDistKM, unitVis[config.Imperial]), 15)
 }
 
 func formatRain(c cond) string {
@@ -417,9 +437,9 @@ func formatRain(c cond) string {
 		rainUnit = float32(c.PrecipMM) * 0.039
 	}
 	if c.ChanceOfRain != "" {
-		return fmt.Sprintf("%.1f %s | %s%%        ", rainUnit, unitRain[config.Imperial], c.ChanceOfRain)[:15]
+		return pad(fmt.Sprintf("%.1f %s | %s%%", rainUnit, unitRain[config.Imperial], c.ChanceOfRain), 15)
 	}
-	return fmt.Sprintf("%.1f %s            ", rainUnit, unitRain[config.Imperial])[:15]
+	return pad(fmt.Sprintf("%.1f %s", rainUnit, unitRain[config.Imperial]), 15)
 }
 
 func formatCond(cur []string, c cond, current bool) (ret []string) {
@@ -505,6 +525,8 @@ func init() {
 	} else if err != nil {
 		log.Fatalf("could not parse %v: %v", configpath, err)
 	}
+
+	ansiEsc = regexp.MustCompile("\033.*?m")
 }
 
 func marshalLang(rv map[string]interface{}, r *resp) error {
