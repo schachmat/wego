@@ -298,6 +298,15 @@ func configsave() error {
 	return err
 }
 
+func pad(s string, chars int) string {
+	rv := s
+	delta := chars - utf8.RuneCountInString(s)
+	if (delta > 0) {
+		rv += strings.Repeat(" ", delta)
+	}
+	return rv
+}
+
 func formatTemp(c cond) string {
 	color := func(temp int) string {
 		var col = 21
@@ -397,9 +406,9 @@ func formatWind(c cond) string {
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spdUnit))
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial])[:57]
+		return pad(fmt.Sprintf("%s %s – %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial]), 53)
 	}
-	return fmt.Sprintf("%s %s %s        ", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial])[:40]
+	return pad(fmt.Sprintf("%s %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial]), 38)
 }
 
 func formatVisibility(c cond) string {
