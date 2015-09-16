@@ -4,8 +4,8 @@ import (
 	"bytes"
 	_ "crypto/sha512"
 	"encoding/json"
+	"flag"
 	"fmt"
-	"github.com/mattn/go-colorable"
 	"io/ioutil"
 	"log"
 	"math"
@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/mattn/go-colorable"
 )
 
 type configuration struct {
@@ -72,6 +74,8 @@ type resp struct {
 }
 
 var (
+	days       int
+	city       string
 	config     configuration
 	configpath string
 	params     []string
@@ -479,6 +483,8 @@ func printDay(w weather) (ret []string) {
 }
 
 func init() {
+	flag.IntVar(&days, "days", 1, "Number of days of weather data to be displayed")
+	flag.StringVar(&city, "city", "New York", "City to be queried")
 	configpath = os.Getenv("WEGORC")
 	if configpath == "" {
 		usr, err := user.Current()
@@ -488,7 +494,7 @@ func init() {
 		configpath = path.Join(usr.HomeDir, ".wegorc")
 	}
 	config.APIKey = ""
-	config.City = "New York"
+	config.City = city
 	config.Imperial = false
 	config.Lang = "en"
 	err := configload()
@@ -559,16 +565,21 @@ func marshalLang(rv map[string]interface{}, r *resp) error {
 }
 
 func main() {
-	var numdays = 3
-
 	if len(config.APIKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
 	}
 	params = append(params, "key="+config.APIKey)
 
+	flag.Parse()
+	config.City = city
+
 	for _, arg := range os.Args[1:] {
+		// if flags are provided by user, ignore remaining args
+		if arg == "-days" || arg == "-city" {
+			break
+		}
 		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
-			numdays = v
+			days = v
 		} else {
 			config.City = arg
 		}
@@ -578,7 +589,7 @@ func main() {
 		params = append(params, "q="+url.QueryEscape(config.City))
 	}
 	params = append(params, "format=json")
-	params = append(params, "num_of_days="+strconv.Itoa(numdays))
+	params = append(params, "num_of_days="+strconv.Itoa(days))
 	params = append(params, "tp=3")
 	if config.Lang != "" {
 		params = append(params, "lang="+config.Lang)
@@ -630,7 +641,7 @@ func main() {
 		fmt.Fprintln(stdout, val)
 	}
 
-	if numdays == 0 {
+	if days == 0 {
 		return
 	}
 	if r.Data.Weather == nil {
