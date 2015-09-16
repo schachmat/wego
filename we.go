@@ -30,7 +30,7 @@ type configuration struct {
 type cond struct {
 	ChanceOfRain   string  `json:"chanceofrain"`
 	FeelsLikeC     int     `json:",string"`
-	PrecipMM       float32 `json:"precipMM,string"`
+	PrecipMM       int     `json:"precipMM,string"`
 	TempC          int     `json:"tempC,string"`
 	TempC2         int     `json:"temp_C,string"`
 	Time           int     `json:"time,string"`
@@ -408,14 +408,19 @@ func formatVisibility(c cond) string {
 }
 
 func formatRain(c cond) string {
-	rainUnit := float32(c.PrecipMM)
 	if config.Imperial {
-		rainUnit = float32(c.PrecipMM) * 0.039
+		temp := c.PrecipMM * 39 
+		c.PrecipMM = temp / 1000 // Temperature in Fahrenheit
+		decimal := temp % 10     // Record one decimal point
+		if c.ChanceOfRain != "" {
+			return fmt.Sprintf("%d.%d %s | %s%%        ", c.PrecipMM, decimal, unitRain[config.Imperial], c.ChanceOfRain)[:15]
+		}
+		return fmt.Sprintf("%d.%d %s            ", c.PrecipMM, decimal, unitRain[config.Imperial])[:15]
 	}
 	if c.ChanceOfRain != "" {
-		return fmt.Sprintf("%.1f %s | %s%%        ", rainUnit, unitRain[config.Imperial], c.ChanceOfRain)[:15]
+		return fmt.Sprintf("%d %s | %s%%        ", c.PrecipMM, unitRain[config.Imperial], c.ChanceOfRain)[:15]
 	}
-	return fmt.Sprintf("%.1f %s            ", rainUnit, unitRain[config.Imperial])[:15]
+	return fmt.Sprintf("%d %s            ", c.PrecipMM, unitRain[config.Imperial])[:15]
 }
 
 func formatCond(cur []string, c cond, current bool) (ret []string) {
