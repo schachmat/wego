@@ -346,7 +346,7 @@ func formatTemp(c cond) string {
 			}
 		}
 		if config.Imperial {
-			temp = (temp * 18 + 320) / 10
+			temp = (temp*18 + 320) / 10
 		}
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
 	}
