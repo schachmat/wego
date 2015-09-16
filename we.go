@@ -389,11 +389,10 @@ func formatWind(c cond) string {
 				col = 196
 			}
 		}
-		spdUnit := float32(spd)
 		if config.Imperial {
-			spdUnit = float32(spd) / 1.609
+			spd = (spd * 1000) / 1609
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(spdUnit))
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
 		return fmt.Sprintf("%s %s – %s %s     ", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial])[:57]
@@ -402,11 +401,10 @@ func formatWind(c cond) string {
 }
 
 func formatVisibility(c cond) string {
-	distUnit := float32(c.VisibleDistKM)
 	if config.Imperial {
-		distUnit = float32(c.VisibleDistKM) * 0.621
+		c.VisibleDistKM = (c.VisibleDistKM * 621) / 1000
 	}
-	return fmt.Sprintf("%d %s            ", int32(distUnit), unitVis[config.Imperial])[:15]
+	return fmt.Sprintf("%d %s            ", c.VisibleDistKM, unitVis[config.Imperial])[:15]
 }
 
 func formatRain(c cond) string {
