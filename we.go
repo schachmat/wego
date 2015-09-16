@@ -345,11 +345,10 @@ func formatTemp(c cond) string {
 				col = 196
 			}
 		}
-		tempUnit := float32(temp)
 		if config.Imperial {
-			tempUnit = float32(temp)*1.8 + 32.0
+			temp = (temp * 18 + 320) / 10
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int32(tempUnit))
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
 	}
 	t := c.TempC
 	if t == 0 {
