@@ -489,7 +489,7 @@ func init() {
 	if configpath == "" {
 		usr, err := user.Current()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err + "\nYou can set the environment variable WEGORC to point to your config file as a workaround.")
 		}
 		configpath = path.Join(usr.HomeDir, ".wegorc")
 	}
