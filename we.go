@@ -164,7 +164,7 @@ var (
 		386: iconThunderyShowers,
 		389: iconThunderyHeavyRain,
 		392: iconThunderySnowShowers,
-		395: iconHeavySnowShowers, // ThunderyHeavySnow
+		395: iconHeavySnowShowers,
 	}
 
 	iconUnknown = []string{
