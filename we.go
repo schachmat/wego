@@ -79,6 +79,7 @@ var (
 	ansiEsc    *regexp.Regexp
 	config     configuration
 	configpath string
+	debug      bool
 	params     []string
 	windDir    = map[string]string{
 		"N":   "\033[1m↓\033[0m",
@@ -502,33 +503,6 @@ func printDay(w weather) (ret []string) {
 	return
 }
 
-func init() {
-	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
-	flag.StringVar(&config.City, "city", "New York", "City to be queried")
-	configpath = os.Getenv("WEGORC")
-	if configpath == "" {
-		usr, err := user.Current()
-		if err != nil {
-			log.Fatalf("%v\nYou can set the environment variable WEGORC to point to your config file as a workaround.", err)
-		}
-		configpath = path.Join(usr.HomeDir, ".wegorc")
-	}
-	config.APIKey = ""
-	config.Imperial = false
-	config.Lang = "en"
-	err := configload()
-	if _, ok := err.(*os.PathError); ok {
-		log.Printf("No config file found. Creating %s ...", configpath)
-		if err2 := configsave(); err2 != nil {
-			log.Fatal(err2)
-		}
-	} else if err != nil {
-		log.Fatalf("could not parse %v: %v", configpath, err)
-	}
-
-	ansiEsc = regexp.MustCompile("\033.*?m")
-}
-
 func marshalLang(rv map[string]interface{}, r *resp) error {
 	if data, ok := rv["data"].(map[string]interface{}); ok {
 		if ccs, ok := data["current_condition"].([]interface{}); ok {
@@ -585,6 +559,34 @@ func marshalLang(rv map[string]interface{}, r *resp) error {
 	return nil
 }
 
+func init() {
+	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
+	flag.StringVar(&config.City, "city", "New York", "City to be queried")
+	flag.BoolVar(&debug, "debug", false, "Print out raw json response for debugging purposes")
+	configpath = os.Getenv("WEGORC")
+	if configpath == "" {
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatalf("%v\nYou can set the environment variable WEGORC to point to your config file as a workaround.", err)
+		}
+		configpath = path.Join(usr.HomeDir, ".wegorc")
+	}
+	config.APIKey = ""
+	config.Imperial = false
+	config.Lang = "en"
+	err := configload()
+	if _, ok := err.(*os.PathError); ok {
+		log.Printf("No config file found. Creating %s ...", configpath)
+		if err2 := configsave(); err2 != nil {
+			log.Fatal(err2)
+		}
+	} else if err != nil {
+		log.Fatalf("could not parse %v: %v", configpath, err)
+	}
+
+	ansiEsc = regexp.MustCompile("\033.*?m")
+}
+
 func main() {
 	if len(config.APIKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
@@ -612,7 +614,9 @@ func main() {
 		params = append(params, "lang="+config.Lang)
 	}
 
-	// fmt.Fprintln(os.Stderr, params)
+	if debug {
+		fmt.Fprintln(os.Stderr, params)
+	}
 
 	res, err := http.Get(uri + strings.Join(params, "&"))
 	if err != nil {
@@ -624,7 +628,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// fmt.Println(string(body))
+	if debug {
+		var out bytes.Buffer
+		json.Indent(&out, body, "", "  ")
+		out.WriteTo(os.Stderr)
+		fmt.Println("\n")
+	}
 
 	var r resp
 	if config.Lang == "" {
