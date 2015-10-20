@@ -80,7 +80,6 @@ var (
 	config     configuration
 	configpath string
 	debug      bool
-	params     []string
 	windDir    = map[string]string{
 		"N":   "\033[1m↓\033[0m",
 		"NNE": "\033[1m↓\033[0m",
@@ -284,7 +283,8 @@ var (
 )
 
 const (
-	uri       = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
+	wuri      = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
+	suri      = "https://api.worldweatheronline.com/free/v2/search.ashx?"
 	slotcount = 4
 )
 
@@ -503,7 +503,11 @@ func printDay(w weather) (ret []string) {
 	return
 }
 
-func marshalLang(rv map[string]interface{}, r *resp) error {
+func unmarshalLang(body []byte, r *resp) error {
+	var rv map[string]interface{}
+	if err := json.Unmarshal(body, &rv); err != nil {
+		return err
+	}
 	if data, ok := rv["data"].(map[string]interface{}); ok {
 		if ccs, ok := data["current_condition"].([]interface{}); ok {
 			for _, cci := range ccs {
@@ -559,6 +563,66 @@ func marshalLang(rv map[string]interface{}, r *resp) error {
 	return nil
 }
 
+func getDataFromAPI() (ret resp) {
+	var params []string
+
+	if len(config.APIKey) == 0 {
+		log.Fatal("No API key specified. Setup instructions are in the README.")
+	}
+	params = append(params, "key="+config.APIKey)
+
+	// non-flag shortcut arguments will overwrite possible flag arguments
+	for _, arg := range flag.Args() {
+		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
+			config.Numdays = v
+		} else {
+			config.City = arg
+		}
+	}
+
+	if len(config.City) > 0 {
+		params = append(params, "q="+url.QueryEscape(config.City))
+	}
+	params = append(params, "format=json")
+	params = append(params, "num_of_days="+strconv.Itoa(config.Numdays))
+	params = append(params, "tp=3")
+	if config.Lang != "" {
+		params = append(params, "lang="+config.Lang)
+	}
+
+	if debug {
+		fmt.Fprintln(os.Stderr, params)
+	}
+
+	res, err := http.Get(wuri + strings.Join(params, "&"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if debug {
+		var out bytes.Buffer
+		json.Indent(&out, body, "", "  ")
+		out.WriteTo(os.Stderr)
+		fmt.Println("\n")
+	}
+
+	if config.Lang == "" {
+		if err = json.Unmarshal(body, &ret); err != nil {
+			log.Println(err)
+		}
+	} else {
+		if err = unmarshalLang(body, &ret); err != nil {
+			log.Println(err)
+		}
+	}
+	return
+}
+
 func init() {
 	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
 	flag.StringVar(&config.City, "city", "New York", "City to be queried")
@@ -588,67 +652,9 @@ func init() {
 }
 
 func main() {
-	if len(config.APIKey) == 0 {
-		log.Fatal("No API key specified. Setup instructions are in the README.")
-	}
-	params = append(params, "key="+config.APIKey)
-
 	flag.Parse()
 
-	// non-flag shortcut arguments will overwrite possible flag arguments
-	for _, arg := range flag.Args() {
-		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
-			config.Numdays = v
-		} else {
-			config.City = arg
-		}
-	}
-
-	if len(config.City) > 0 {
-		params = append(params, "q="+url.QueryEscape(config.City))
-	}
-	params = append(params, "format=json")
-	params = append(params, "num_of_days="+strconv.Itoa(config.Numdays))
-	params = append(params, "tp=3")
-	if config.Lang != "" {
-		params = append(params, "lang="+config.Lang)
-	}
-
-	if debug {
-		fmt.Fprintln(os.Stderr, params)
-	}
-
-	res, err := http.Get(uri + strings.Join(params, "&"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if debug {
-		var out bytes.Buffer
-		json.Indent(&out, body, "", "  ")
-		out.WriteTo(os.Stderr)
-		fmt.Println("\n")
-	}
-
-	var r resp
-	if config.Lang == "" {
-		if err = json.Unmarshal(body, &r); err != nil {
-			log.Println(err)
-		}
-	} else {
-		var rv map[string]interface{}
-		if err = json.Unmarshal(body, &rv); err != nil {
-			log.Println(err)
-		}
-		if err = marshalLang(rv, &r); err != nil {
-			log.Println(err)
-		}
-	}
+	r := getDataFromAPI()
 
 	if r.Data.Req == nil || len(r.Data.Req) < 1 {
 		if r.Data.Err != nil && len(r.Data.Err) >= 1 {
