@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	_ "crypto/sha512"
 	"encoding/json"
 	"flag"
@@ -9,79 +8,33 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"net/http"
-	"net/url"
 	"os"
 	"os/user"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
+	"github.com/schachmat/wego/backends"
+	"github.com/schachmat/wego/iface"
 )
 
 type configuration struct {
-	APIKey   string
-	City     string
-	Numdays  int
-	Imperial bool
-	Lang     string
-}
-
-type cond struct {
-	ChanceOfRain   string  `json:"chanceofrain"`
-	FeelsLikeC     int     `json:",string"`
-	PrecipMM       float32 `json:"precipMM,string"`
-	TempC          int     `json:"tempC,string"`
-	TempC2         int     `json:"temp_C,string"`
-	Time           int     `json:"time,string"`
-	VisibleDistKM  int     `json:"visibility,string"`
-	WeatherCode    int     `json:"weatherCode,string"`
-	WeatherDesc    []struct{ Value string }
-	WindGustKmph   int `json:",string"`
-	Winddir16Point string
-	WindspeedKmph  int `json:"windspeedKmph,string"`
-}
-
-type astro struct {
-	Moonrise string
-	Moonset  string
-	Sunrise  string
-	Sunset   string
-}
-
-type weather struct {
-	Astronomy []astro
-	Date      string
-	Hourly    []cond
-	MaxtempC  int `json:"maxtempC,string"`
-	MintempC  int `json:"mintempC,string"`
-}
-
-type loc struct {
-	Query string `json:"query"`
-	Type  string `json:"type"`
-}
-
-type resp struct {
-	Data struct {
-		Cur     []cond                 `json:"current_condition"`
-		Err     []struct{ Msg string } `json:"error"`
-		Req     []loc                  `json:"request"`
-		Weather []weather              `json:"weather"`
-	} `json:"data"`
+	Imperial        bool
+	Numdays         int
+	Location        string
+	Backends        map[string]map[string]interface{}
+	SelectedBackend string
 }
 
 var (
-	ansiEsc    *regexp.Regexp
-	config     configuration
-	configpath string
-	debug      bool
-	windDir    = map[string]string{
+	ansiEsc   *regexp.Regexp
+	config    configuration
+	slotTimes = [slotcount]int{9 * 60, 12 * 60, 18 * 60, 22 * 60}
+	windDir   = map[string]string{
 		"N":   "\033[1m↓\033[0m",
 		"NNE": "\033[1m↓\033[0m",
 		"NE":  "\033[1m↙\033[0m",
@@ -115,8 +68,7 @@ var (
 		false: "km/h",
 		true:  "mph",
 	}
-	slotTimes = [slotcount]int{9 * 60, 12 * 60, 18 * 60, 22 * 60}
-	codes     = map[int][]string{
+	codes = map[int][]string{
 		113: iconSunny,
 		116: iconPartlyCloudy,
 		119: iconCloudy,
@@ -284,26 +236,8 @@ var (
 )
 
 const (
-	wuri      = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
-	suri      = "https://api.worldweatheronline.com/free/v2/search.ashx?"
 	slotcount = 4
 )
-
-func configload() error {
-	b, err := ioutil.ReadFile(configpath)
-	if err == nil {
-		return json.Unmarshal(b, &config)
-	}
-	return err
-}
-
-func configsave() error {
-	j, err := json.MarshalIndent(config, "", "\t")
-	if err == nil {
-		return ioutil.WriteFile(configpath, j, 0600)
-	}
-	return err
-}
 
 func pad(s string, mustLen int) (ret string) {
 	ret = s
@@ -324,7 +258,7 @@ func pad(s string, mustLen int) (ret string) {
 	return
 }
 
-func formatTemp(c cond) string {
+func formatTemp(c iface.Cond) string {
 	color := func(temp int) string {
 		var col = 21
 		switch temp {
@@ -388,7 +322,7 @@ func formatTemp(c cond) string {
 	return pad(fmt.Sprintf("%s °%s", color(c.FeelsLikeC), unitTemp[config.Imperial]), 15)
 }
 
-func formatWind(c cond) string {
+func formatWind(c iface.Cond) string {
 	color := func(spd int) string {
 		var col = 46
 		switch spd {
@@ -426,14 +360,14 @@ func formatWind(c cond) string {
 	return pad(fmt.Sprintf("%s %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial]), 15)
 }
 
-func formatVisibility(c cond) string {
+func formatVisibility(c iface.Cond) string {
 	if config.Imperial {
 		c.VisibleDistKM = (c.VisibleDistKM * 621) / 1000
 	}
 	return pad(fmt.Sprintf("%d %s", c.VisibleDistKM, unitVis[config.Imperial]), 15)
 }
 
-func formatRain(c cond) string {
+func formatRain(c iface.Cond) string {
 	rainUnit := float32(c.PrecipMM)
 	if config.Imperial {
 		rainUnit = float32(c.PrecipMM) * 0.039
@@ -444,7 +378,7 @@ func formatRain(c cond) string {
 	return pad(fmt.Sprintf("%.1f %s", rainUnit, unitRain[config.Imperial]), 15)
 }
 
-func formatCond(cur []string, c cond, current bool) (ret []string) {
+func formatCond(cur []string, c iface.Cond, current bool) (ret []string) {
 	var icon []string
 	if i, ok := codes[c.WeatherCode]; !ok {
 		icon = iconUnknown
@@ -463,7 +397,7 @@ func formatCond(cur []string, c cond, current bool) (ret []string) {
 	return
 }
 
-func printDay(w weather) (ret []string) {
+func printDay(w iface.Weather) (ret []string) {
 	hourly := w.Hourly
 	ret = make([]string, 5)
 	for i := range ret {
@@ -471,7 +405,7 @@ func printDay(w weather) (ret []string) {
 	}
 
 	// find hourly data which fits the desired times of day best
-	var slots [slotcount]cond
+	var slots [slotcount]iface.Cond
 	for _, h := range hourly {
 		c := int(math.Mod(float64(h.Time), 100)) + 60*(h.Time/100)
 		for i, s := range slots {
@@ -502,131 +436,28 @@ func printDay(w weather) (ret []string) {
 	return
 }
 
-func unmarshalLang(body []byte, r *resp) error {
-	var rv map[string]interface{}
-	if err := json.Unmarshal(body, &rv); err != nil {
-		return err
+func configload(cpath string) error {
+	b, err := ioutil.ReadFile(cpath)
+	if err == nil {
+		return json.Unmarshal(b, &config)
 	}
-	if data, ok := rv["data"].(map[string]interface{}); ok {
-		if ccs, ok := data["current_condition"].([]interface{}); ok {
-			for _, cci := range ccs {
-				cc, ok := cci.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				langs, ok := cc["lang_"+config.Lang].([]interface{})
-				if !ok || len(langs) == 0 {
-					continue
-				}
-				weatherDesc, ok := cc["weatherDesc"].([]interface{})
-				if !ok || len(weatherDesc) == 0 {
-					continue
-				}
-				weatherDesc[0] = langs[0]
-			}
-		}
-		if ws, ok := data["weather"].([]interface{}); ok {
-			for _, wi := range ws {
-				w, ok := wi.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				if hs, ok := w["hourly"].([]interface{}); ok {
-					for _, hi := range hs {
-						h, ok := hi.(map[string]interface{})
-						if !ok {
-							continue
-						}
-						langs, ok := h["lang_"+config.Lang].([]interface{})
-						if !ok || len(langs) == 0 {
-							continue
-						}
-						weatherDesc, ok := h["weatherDesc"].([]interface{})
-						if !ok || len(weatherDesc) == 0 {
-							continue
-						}
-						weatherDesc[0] = langs[0]
-					}
-				}
-			}
-		}
-	}
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(rv); err != nil {
-		return err
-	} else {
-		if err = json.NewDecoder(&buf).Decode(r); err != nil {
-			return err
-		}
-	}
-	return nil
+	return err
 }
 
-func getDataFromAPI() (ret resp) {
-	var params []string
-
-	if len(config.APIKey) == 0 {
-		log.Fatal("No API key specified. Setup instructions are in the README.")
+func configsave(cpath string) error {
+	j, err := json.MarshalIndent(config, "", "\t")
+	if err == nil {
+		return ioutil.WriteFile(cpath, j, 0600)
 	}
-	params = append(params, "key="+config.APIKey)
-
-	// non-flag shortcut arguments will overwrite possible flag arguments
-	for _, arg := range flag.Args() {
-		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
-			config.Numdays = v
-		} else {
-			config.City = arg
-		}
-	}
-
-	if len(config.City) > 0 {
-		params = append(params, "q="+url.QueryEscape(config.City))
-	}
-	params = append(params, "format=json")
-	params = append(params, "num_of_days="+strconv.Itoa(config.Numdays))
-	params = append(params, "tp=3")
-	if config.Lang != "" {
-		params = append(params, "lang="+config.Lang)
-	}
-
-	if debug {
-		fmt.Fprintln(os.Stderr, params)
-	}
-
-	res, err := http.Get(wuri + strings.Join(params, "&"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if debug {
-		var out bytes.Buffer
-		json.Indent(&out, body, "", "  ")
-		out.WriteTo(os.Stderr)
-		fmt.Println("\n")
-	}
-
-	if config.Lang == "" {
-		if err = json.Unmarshal(body, &ret); err != nil {
-			log.Println(err)
-		}
-	} else {
-		if err = unmarshalLang(body, &ret); err != nil {
-			log.Println(err)
-		}
-	}
-	return
+	return err
 }
 
 func init() {
-	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
-	flag.StringVar(&config.City, "city", "New York", "City to be queried")
-	flag.BoolVar(&debug, "debug", false, "Print out raw json response for debugging purposes")
-	configpath = os.Getenv("WEGORC")
+	ansiEsc = regexp.MustCompile("\033.*?m")
+}
+
+func main() {
+	configpath := os.Getenv("WEGORC")
 	if configpath == "" {
 		usr, err := user.Current()
 		if err != nil {
@@ -634,26 +465,38 @@ func init() {
 		}
 		configpath = path.Join(usr.HomeDir, ".wegorc")
 	}
-	config.APIKey = ""
-	config.Imperial = false
-	config.Lang = "en"
-	err := configload()
+
+	// initialize backends (flags and default config)
+	config.Backends = make(map[string]map[string]interface{})
+	for key, be := range backends.All {
+		config.Backends[key] = make(map[string]interface{})
+		be.Setup(config.Backends[key])
+	}
+
+	// initialize global flags and default config
+	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
+	flag.StringVar(&config.Location, "city", "New York", "Location to be queried")
+	flag.StringVar(&config.SelectedBackend, "backend", "worldweatheronline.com", "Backend to be used")
+	flag.BoolVar(&config.Imperial, "imperial", false, "use imperial units for output")
+
+	// load config file, if it does not exist yet, create it with default values
+	err := configload(configpath)
 	if _, ok := err.(*os.PathError); ok {
 		log.Printf("No config file found. Creating %s ...", configpath)
-		if err2 := configsave(); err2 != nil {
+		if err2 := configsave(configpath); err2 != nil {
 			log.Fatal(err2)
 		}
 	} else if err != nil {
 		log.Fatalf("could not parse %v: %v", configpath, err)
 	}
 
-	ansiEsc = regexp.MustCompile("\033.*?m")
-}
-
-func main() {
 	flag.Parse()
 
-	r := getDataFromAPI()
+	be, ok := backends.All[config.SelectedBackend]
+	if !ok {
+		log.Fatalf("Could not find \"%s\" backend.", config.SelectedBackend)
+	}
+	r := be.Fetch(config.Backends[config.SelectedBackend], config.Location, config.Numdays)
 
 	if r.Data.Req == nil || len(r.Data.Req) < 1 {
 		if r.Data.Err != nil && len(r.Data.Err) >= 1 {
