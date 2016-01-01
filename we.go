@@ -80,6 +80,7 @@ var (
 	config     configuration
 	configpath string
 	debug      bool
+	wallMode   bool
 	windDir    = map[string]string{
 		"N":   "\033[1m↓\033[0m",
 		"NNE": "\033[1m↓\033[0m",
@@ -627,6 +628,7 @@ func init() {
 	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
 	flag.StringVar(&config.City, "city", "New York", "City to be queried")
 	flag.BoolVar(&debug, "debug", false, "Print out raw json response for debugging purposes")
+	flag.BoolVar(&wallMode, "wall", false, "Enable wall-display mode")
 	configpath = os.Getenv("WEGORC")
 	if configpath == "" {
 		usr, err := user.Current()
@@ -679,9 +681,23 @@ func main() {
 	if r.Data.Weather == nil {
 		log.Fatal("No detailed weather forecast available.")
 	}
-	for _, d := range r.Data.Weather {
-		for _, val := range printDay(d) {
-			fmt.Fprintln(stdout, val)
+
+	for {
+		if wallMode {
+			// Clear terminal
+			print("\033[H\033[2J")
 		}
+
+		for _, d := range r.Data.Weather {
+			for _, val := range printDay(d) {
+				fmt.Fprintln(stdout, val)
+			}
+		}
+
+		if !wallMode {
+			return
+		}
+
+		time.Sleep(time.Duration(1 * time.Minute))
 	}
 }
