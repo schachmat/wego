@@ -84,6 +84,11 @@ func wwoSetup(conf map[string]interface{}) {
 	conf["Lang"] = flag.String("wwo-lang", "en", "wwo backend: language")
 }
 
+func wwoFlags(conf map[string]interface{}) {
+	conf["APIKey"] = flag.String("wwo-api-key", "", "wwo backend: API key")
+	conf["Lang"] = flag.String("wwo-lang", "en", "wwo backend: language")
+}
+
 func wwoFetch(conf map[string]interface{}, loc string, numdays int) (ret iface.Resp) {
 	var params []string
 
