@@ -21,6 +21,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-runewidth"
 )
 
 type configuration struct {
@@ -450,11 +451,9 @@ func formatCond(cur []string, c cond, current bool) (ret []string) {
 	} else {
 		icon = i
 	}
-	desc := fmt.Sprintf("%-15.15v", c.WeatherDesc[0].Value)
-	if current {
-		desc = c.WeatherDesc[0].Value
-	} else if lastRune, size := utf8.DecodeLastRuneInString(desc); lastRune != ' ' {
-		desc = desc[:len(desc)-size] + "…"
+	desc := c.WeatherDesc[0].Value
+	if !current {
+		desc = runewidth.Truncate(runewidth.FillRight(desc, 15), 15, "…")
 	}
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[0], icon[0], desc))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon[1], formatTemp(c)))
