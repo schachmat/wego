@@ -14,6 +14,11 @@ import (
 	"github.com/schachmat/wego/iface"
 )
 
+type worldweatheronline struct {
+	WwoApiKey string
+	WwoLanguage string
+}
+
 const (
 	wuri = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
 	suri = "https://api.worldweatheronline.com/free/v2/search.ashx?"
@@ -71,50 +76,22 @@ func unmarshalLang(body []byte, r *iface.Resp, lang string) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(rv); err != nil {
 		return err
-	} else {
-		if err = json.NewDecoder(&buf).Decode(r); err != nil {
-			return err
-		}
 	}
-	return nil
+	return json.NewDecoder(&buf).Decode(r)
 }
 
-func wwoSetup(conf map[string]interface{}) {
-	conf["APIKey"] = flag.String("wwo-api-key", "", "wwo backend: API key")
-	conf["Lang"] = flag.String("wwo-lang", "en", "wwo backend: language")
+func (c *worldweatheronline) Setup() {
+	flag.StringVar(&c.WwoApiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
+	flag.StringVar(&c.WwoLanguage, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
 }
 
-func wwoFlags(conf map[string]interface{}) {
-	conf["APIKey"] = flag.String("wwo-api-key", "", "wwo backend: API key")
-	conf["Lang"] = flag.String("wwo-lang", "en", "wwo backend: language")
-}
-
-func wwoFetch(conf map[string]interface{}, loc string, numdays int) (ret iface.Resp) {
+func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
 	var params []string
 
-	APIKey, ok := conf["APIKey"].(string)
-	if !ok {
-		APIKey = *conf["APIKey"].(*string)
-	}
-
-	Lang, ok := conf["Lang"].(string)
-	if !ok {
-		Lang = *conf["Lang"].(*string)
-	}
-
-	if len(APIKey) == 0 {
+	if len(c.WwoApiKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
 	}
-	params = append(params, "key="+APIKey)
-
-	// non-flag shortcut arguments overwrite possible flag arguments
-	for _, arg := range flag.Args() {
-		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
-			numdays = v
-		} else {
-			loc = arg
-		}
-	}
+	params = append(params, "key="+c.WwoApiKey)
 
 	if len(loc) > 0 {
 		params = append(params, "q="+url.QueryEscape(loc))
@@ -122,8 +99,8 @@ func wwoFetch(conf map[string]interface{}, loc string, numdays int) (ret iface.R
 	params = append(params, "format=json")
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
-	if Lang != "" {
-		params = append(params, "lang="+Lang)
+	if c.WwoLanguage != "" {
+		params = append(params, "lang="+c.WwoLanguage)
 	}
 
 	res, err := http.Get(wuri + strings.Join(params, "&"))
@@ -136,12 +113,12 @@ func wwoFetch(conf map[string]interface{}, loc string, numdays int) (ret iface.R
 		log.Fatal(err)
 	}
 
-	if Lang == "" {
+	if c.WwoLanguage == "" {
 		if err = json.Unmarshal(body, &ret); err != nil {
 			log.Println(err)
 		}
 	} else {
-		if err = unmarshalLang(body, &ret, Lang); err != nil {
+		if err = unmarshalLang(body, &ret, c.WwoLanguage); err != nil {
 			log.Println(err)
 		}
 	}
@@ -149,5 +126,5 @@ func wwoFetch(conf map[string]interface{}, loc string, numdays int) (ret iface.R
 }
 
 func init() {
-	All["worldweatheronline.com"] = Backend{wwoSetup, wwoFetch}
+	All["worldweatheronline.com"] = &worldweatheronline{}
 }

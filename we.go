@@ -2,10 +2,9 @@ package main
 
 import (
 	_ "crypto/sha512"
-	"encoding/json"
+	"strconv"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -18,16 +17,13 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
+	"github.com/schachmat/ingo"
 	"github.com/schachmat/wego/backends"
 	"github.com/schachmat/wego/iface"
 )
 
 type configuration struct {
 	Imperial        bool
-	Numdays         int
-	Location        string
-	Backends        map[string]map[string]interface{}
-	SelectedBackend string
 }
 
 var (
@@ -436,22 +432,6 @@ func printDay(w iface.Weather) (ret []string) {
 	return
 }
 
-func configload(cpath string) error {
-	b, err := ioutil.ReadFile(cpath)
-	if err == nil {
-		return json.Unmarshal(b, &config)
-	}
-	return err
-}
-
-func configsave(cpath string) error {
-	j, err := json.MarshalIndent(config, "", "\t")
-	if err == nil {
-		return ioutil.WriteFile(cpath, j, 0600)
-	}
-	return err
-}
-
 func init() {
 	ansiEsc = regexp.MustCompile("\033.*?m")
 }
@@ -467,36 +447,34 @@ func main() {
 	}
 
 	// initialize backends (flags and default config)
-	config.Backends = make(map[string]map[string]interface{})
-	for key, be := range backends.All {
-		config.Backends[key] = make(map[string]interface{})
-		be.Setup(config.Backends[key])
+	for _, be := range backends.All {
+		be.Setup()
 	}
 
 	// initialize global flags and default config
-	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
-	flag.StringVar(&config.Location, "city", "New York", "Location to be queried")
-	flag.StringVar(&config.SelectedBackend, "backend", "worldweatheronline.com", "Backend to be used")
+	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
+	location := flag.String("city", "New York", "`LOCATION` to be queried")
+	selectedBackend := flag.String("backend", "worldweatheronline.com", "`BACKEND` to be used")
 	flag.BoolVar(&config.Imperial, "imperial", false, "use imperial units for output")
 
-	// load config file, if it does not exist yet, create it with default values
-	err := configload(configpath)
-	if _, ok := err.(*os.PathError); ok {
-		log.Printf("No config file found. Creating %s ...", configpath)
-		if err2 := configsave(configpath); err2 != nil {
-			log.Fatal(err2)
+	// read/write config and parse flags
+	ingo.Parse(configpath)
+
+	// non-flag shortcut arguments overwrite possible flag arguments
+	for _, arg := range flag.Args() {
+		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
+			*numdays = v
+		} else {
+			*location = arg
 		}
-	} else if err != nil {
-		log.Fatalf("could not parse %v: %v", configpath, err)
 	}
 
-	flag.Parse()
-
-	be, ok := backends.All[config.SelectedBackend]
+	// get selected backend and fetch the weather data from it
+	be, ok := backends.All[*selectedBackend]
 	if !ok {
-		log.Fatalf("Could not find \"%s\" backend.", config.SelectedBackend)
+		log.Fatalf("Could not find selected backend \"%s\"", *selectedBackend)
 	}
-	r := be.Fetch(config.Backends[config.SelectedBackend], config.Location, config.Numdays)
+	r := be.Fetch(*location, *numdays)
 
 	if r.Data.Req == nil || len(r.Data.Req) < 1 {
 		if r.Data.Err != nil && len(r.Data.Err) >= 1 {
@@ -515,7 +493,7 @@ func main() {
 		fmt.Fprintln(stdout, val)
 	}
 
-	if config.Numdays == 0 {
+	if *numdays == 0 {
 		return
 	}
 	if r.Data.Weather == nil {
