@@ -15,8 +15,8 @@ import (
 )
 
 type worldweatheronline struct {
-	WwoApiKey string
-	WwoLanguage string
+	wwoApiKey string
+	wwoLanguage string
 }
 
 const (
@@ -81,17 +81,17 @@ func unmarshalLang(body []byte, r *iface.Resp, lang string) error {
 }
 
 func (c *worldweatheronline) Setup() {
-	flag.StringVar(&c.WwoApiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
-	flag.StringVar(&c.WwoLanguage, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
+	flag.StringVar(&c.wwoApiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
+	flag.StringVar(&c.wwoLanguage, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
 }
 
 func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
 	var params []string
 
-	if len(c.WwoApiKey) == 0 {
+	if len(c.wwoApiKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
 	}
-	params = append(params, "key="+c.WwoApiKey)
+	params = append(params, "key="+c.wwoApiKey)
 
 	if len(loc) > 0 {
 		params = append(params, "q="+url.QueryEscape(loc))
@@ -99,8 +99,8 @@ func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
 	params = append(params, "format=json")
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
-	if c.WwoLanguage != "" {
-		params = append(params, "lang="+c.WwoLanguage)
+	if c.wwoLanguage != "" {
+		params = append(params, "lang="+c.wwoLanguage)
 	}
 
 	res, err := http.Get(wuri + strings.Join(params, "&"))
@@ -113,14 +113,25 @@ func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
 		log.Fatal(err)
 	}
 
-	if c.WwoLanguage == "" {
+	if c.wwoLanguage == "" {
 		if err = json.Unmarshal(body, &ret); err != nil {
 			log.Println(err)
 		}
 	} else {
-		if err = unmarshalLang(body, &ret, c.WwoLanguage); err != nil {
+		if err = unmarshalLang(body, &ret, c.wwoLanguage); err != nil {
 			log.Println(err)
 		}
+	}
+
+	if ret.Data.Req == nil || len(ret.Data.Req) < 1 {
+		if ret.Data.Err != nil && len(ret.Data.Err) >= 1 {
+			log.Fatal(ret.Data.Err[0].Msg)
+		}
+		log.Fatal("Malformed response.")
+	}
+
+	if numdays == 0 {
+		ret.Data.Weather = []iface.Weather{}
 	}
 	return
 }
