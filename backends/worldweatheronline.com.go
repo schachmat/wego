@@ -15,7 +15,7 @@ import (
 )
 
 type worldweatheronline struct {
-	wwoApiKey string
+	wwoApiKey   string
 	wwoLanguage string
 }
 

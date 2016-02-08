@@ -2,12 +2,12 @@ package main
 
 import (
 	_ "crypto/sha512"
-	"strconv"
 	"flag"
 	"log"
 	"os"
 	"os/user"
 	"path"
+	"strconv"
 
 	"github.com/schachmat/ingo"
 	"github.com/schachmat/wego/backends"

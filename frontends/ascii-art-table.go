@@ -1,13 +1,13 @@
 package frontends
 
 import (
-	"log"
-	"time"
 	"flag"
-	"math"
 	"fmt"
+	"log"
+	"math"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/mattn/go-colorable"
