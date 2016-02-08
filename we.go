@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "crypto/sha512"
 	"flag"
 	"log"
 	"os"

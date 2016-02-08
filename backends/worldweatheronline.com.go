@@ -1,6 +1,7 @@
 package backends
 
 import (
+	_ "crypto/sha512"
 	"bytes"
 	"encoding/json"
 	"flag"
