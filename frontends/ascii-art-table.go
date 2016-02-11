@@ -421,7 +421,6 @@ func (c *asciiarttable) printDay(w iface.Weather) (ret []string) {
 		ret...)
 	return append(ret,
 		"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
-	return
 }
 
 func (c *asciiarttable) Setup() {
