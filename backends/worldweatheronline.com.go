@@ -138,5 +138,5 @@ func (c *wwoConfig) Fetch(loc string, numdays int) (ret iface.Resp) {
 }
 
 func init() {
-	All["worldweatheronline.com"] = &wwoConfig{}
+	iface.AllBackends["worldweatheronline.com"] = &wwoConfig{}
 }

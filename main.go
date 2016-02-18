@@ -9,8 +9,9 @@ import (
 	"strconv"
 
 	"github.com/schachmat/ingo"
-	"github.com/schachmat/wego/backends"
-	"github.com/schachmat/wego/frontends"
+	_ "github.com/schachmat/wego/backends"
+	_ "github.com/schachmat/wego/frontends"
+	"github.com/schachmat/wego/iface"
 )
 
 func main() {
@@ -24,10 +25,10 @@ func main() {
 	}
 
 	// initialize backends and frontends (flags and default config)
-	for _, be := range backends.All {
+	for _, be := range iface.AllBackends {
 		be.Setup()
 	}
-	for _, fe := range frontends.All {
+	for _, fe := range iface.AllFrontends {
 		fe.Setup()
 	}
 
@@ -50,14 +51,14 @@ func main() {
 	}
 
 	// get selected backend and fetch the weather data from it
-	be, ok := backends.All[*selectedBackend]
+	be, ok := iface.AllBackends[*selectedBackend]
 	if !ok {
 		log.Fatalf("Could not find selected backend \"%s\"", *selectedBackend)
 	}
 	r := be.Fetch(*location, *numdays)
 
 	// get selected frontend and render the weather data with it
-	fe, ok := frontends.All[*selectedFrontend]
+	fe, ok := iface.AllFrontends[*selectedFrontend]
 	if !ok {
 		log.Fatalf("Could not find selected frontend \"%s\"", *selectedFrontend)
 	}

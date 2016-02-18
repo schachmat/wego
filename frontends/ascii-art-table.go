@@ -466,5 +466,5 @@ func (c *aatConfig) Render(r iface.Resp) {
 }
 
 func init() {
-	All["ascii-art-table"] = &aatConfig{}
+	iface.AllFrontends["ascii-art-table"] = &aatConfig{}
 }

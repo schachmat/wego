@@ -43,3 +43,18 @@ type Resp struct {
 		Weather []Weather              `json:"weather"`
 	} `json:"data"`
 }
+
+type Backend interface {
+	Setup()
+	Fetch(location string, numdays int) Resp
+}
+
+type Frontend interface {
+	Setup()
+	Render(weather Resp)
+}
+
+var (
+	AllBackends  = make(map[string]Backend)
+	AllFrontends = make(map[string]Frontend)
+)
