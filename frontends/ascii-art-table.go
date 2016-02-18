@@ -437,7 +437,7 @@ func (c *aatConfig) printDay(w iface.Weather) (ret []string) {
 }
 
 func (c *aatConfig) Setup() {
-	flag.BoolVar(&c.imperial, "aat-imperial", false, "use imperial units for output")
+	flag.BoolVar(&c.imperial, "aat-imperial", false, "aat frontend: use imperial units for output")
 }
 
 func (c *aatConfig) Render(r iface.Resp) {
