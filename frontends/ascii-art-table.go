@@ -15,14 +15,104 @@ import (
 	"github.com/schachmat/wego/iface"
 )
 
-type asciiarttable struct {
-	aatImperial bool
+type aatConfig struct {
+	imperial bool
 }
 
-var (
-	ansiEsc   *regexp.Regexp
-	slotTimes = [slotcount]int{9 * 60, 12 * 60, 18 * 60, 22 * 60}
-	windDir   = map[string]string{
+func aatPad(s string, mustLen int) (ret string) {
+	ansiEsc := regexp.MustCompile("\033.*?m")
+	ret = s
+	realLen := utf8.RuneCountInString(ansiEsc.ReplaceAllLiteralString(s, ""))
+	delta := mustLen - realLen
+	if delta > 0 {
+		ret += "\033[0m" + strings.Repeat(" ", delta)
+	} else if delta < 0 {
+		toks := ansiEsc.Split(s, 2)
+		tokLen := utf8.RuneCountInString(toks[0])
+		esc := ansiEsc.FindString(s)
+		if tokLen > mustLen {
+			ret = fmt.Sprintf("%.*s\033[0m", mustLen, toks[0])
+		} else {
+			ret = fmt.Sprintf("%s%s%s", toks[0], esc, aatPad(toks[1], mustLen-tokLen))
+		}
+	}
+	return
+}
+
+func (c *aatConfig) formatTemp(cond iface.Cond) string {
+	unit := map[bool]string{
+		false: "C",
+		true:  "F",
+	}
+	color := func(temp int) string {
+		var col = 21
+		switch temp {
+		case -15, -14, -13:
+			col = 27
+		case -12, -11, -10:
+			col = 33
+		case -9, -8, -7:
+			col = 39
+		case -6, -5, -4:
+			col = 45
+		case -3, -2, -1:
+			col = 51
+		case 0, 1:
+			col = 50
+		case 2, 3:
+			col = 49
+		case 4, 5:
+			col = 48
+		case 6, 7:
+			col = 47
+		case 8, 9:
+			col = 46
+		case 10, 11, 12:
+			col = 82
+		case 13, 14, 15:
+			col = 118
+		case 16, 17, 18:
+			col = 154
+		case 19, 20, 21:
+			col = 190
+		case 22, 23, 24:
+			col = 226
+		case 25, 26, 27:
+			col = 220
+		case 28, 29, 30:
+			col = 214
+		case 31, 32, 33:
+			col = 208
+		case 34, 35, 36:
+			col = 202
+		default:
+			if temp > 0 {
+				col = 196
+			}
+		}
+		if c.imperial {
+			temp = (temp*18 + 320) / 10
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
+	}
+	t := cond.TempC
+	if t == 0 {
+		t = cond.TempC2
+	}
+	if cond.FeelsLikeC < t {
+		return aatPad(fmt.Sprintf("%s – %s °%s", color(cond.FeelsLikeC), color(t), unit[c.imperial]), 15)
+	} else if cond.FeelsLikeC > t {
+		return aatPad(fmt.Sprintf("%s – %s °%s", color(t), color(cond.FeelsLikeC), unit[c.imperial]), 15)
+	}
+	return aatPad(fmt.Sprintf("%s °%s", color(cond.FeelsLikeC), unit[c.imperial]), 15)
+}
+
+func (c *aatConfig) formatWind(cond iface.Cond) string {
+	unit := map[bool]string{
+		false: "km/h",
+		true:  "mph",
+	}
+	windDir := map[string]string{
 		"N":   "\033[1m↓\033[0m",
 		"NNE": "\033[1m↓\033[0m",
 		"NE":  "\033[1m↙\033[0m",
@@ -40,23 +130,204 @@ var (
 		"NW":  "\033[1m↘\033[0m",
 		"NNW": "\033[1m↘\033[0m",
 	}
-	unitRain = map[bool]string{
-		false: "mm",
-		true:  "in",
+	color := func(spd int) string {
+		var col = 46
+		switch spd {
+		case 1, 2, 3:
+			col = 82
+		case 4, 5, 6:
+			col = 118
+		case 7, 8, 9:
+			col = 154
+		case 10, 11, 12:
+			col = 190
+		case 13, 14, 15:
+			col = 226
+		case 16, 17, 18, 19:
+			col = 220
+		case 20, 21, 22, 23:
+			col = 214
+		case 24, 25, 26, 27:
+			col = 208
+		case 28, 29, 30, 31:
+			col = 202
+		default:
+			if spd > 0 {
+				col = 196
+			}
+		}
+		if c.imperial {
+			spd = (spd * 1000) / 1609
+		}
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
 	}
-	unitTemp = map[bool]string{
-		false: "C",
-		true:  "F",
+	if cond.WindGustKmph > cond.WindspeedKmph {
+		return aatPad(fmt.Sprintf("%s %s – %s %s", windDir[cond.Winddir16Point], color(cond.WindspeedKmph), color(cond.WindGustKmph), unit[c.imperial]), 15)
 	}
-	unitVis = map[bool]string{
+	return aatPad(fmt.Sprintf("%s %s %s", windDir[cond.Winddir16Point], color(cond.WindspeedKmph), unit[c.imperial]), 15)
+}
+
+func (c *aatConfig) formatVisibility(cond iface.Cond) string {
+	unit := map[bool]string{
 		false: "km",
 		true:  "mi",
 	}
-	unitWind = map[bool]string{
-		false: "km/h",
-		true:  "mph",
+	if c.imperial {
+		cond.VisibleDistKM = (cond.VisibleDistKM * 621) / 1000
 	}
-	codes = map[int][]string{
+	return aatPad(fmt.Sprintf("%d %s", cond.VisibleDistKM, unit[c.imperial]), 15)
+}
+
+func (c *aatConfig) formatRain(cond iface.Cond) string {
+	unit := map[bool]string{
+		false: "mm",
+		true:  "in",
+	}
+	val := float32(cond.PrecipMM)
+	if c.imperial {
+		val = float32(cond.PrecipMM) * 0.039
+	}
+	if cond.ChanceOfRain != "" {
+		return aatPad(fmt.Sprintf("%.1f %s | %s%%", val, unit[c.imperial], cond.ChanceOfRain), 15)
+	}
+	return aatPad(fmt.Sprintf("%.1f %s", val, unit[c.imperial]), 15)
+}
+
+func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret []string) {
+	iconUnknown := []string{
+		"    .-.      ",
+		"     __)     ",
+		"    (        ",
+		"     `-’     ",
+		"      •      ",
+	}
+	iconSunny := []string{
+		"\033[38;5;226m    \\   /    \033[0m",
+		"\033[38;5;226m     .-.     \033[0m",
+		"\033[38;5;226m  ― (   ) ―  \033[0m",
+		"\033[38;5;226m     `-’     \033[0m",
+		"\033[38;5;226m    /   \\    \033[0m",
+	}
+	iconPartlyCloudy := []string{
+		"\033[38;5;226m   \\  /\033[0m      ",
+		"\033[38;5;226m _ /\"\"\033[38;5;250m.-.    \033[0m",
+		"\033[38;5;226m   \\_\033[38;5;250m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+		"             ",
+	}
+	iconCloudy := []string{
+		"             ",
+		"\033[38;5;250m     .--.    \033[0m",
+		"\033[38;5;250m  .-(    ).  \033[0m",
+		"\033[38;5;250m (___.__)__) \033[0m",
+		"             ",
+	}
+	iconVeryCloudy := []string{
+		"             ",
+		"\033[38;5;240;1m     .--.    \033[0m",
+		"\033[38;5;240;1m  .-(    ).  \033[0m",
+		"\033[38;5;240;1m (___.__)__) \033[0m",
+		"             ",
+	}
+	iconLightShowers := []string{
+		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+		"\033[38;5;111m     ‘ ‘ ‘ ‘ \033[0m",
+		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
+	}
+	iconHeavyShowers := []string{
+		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
+		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
+		"\033[38;5;21;1m   ‚‘‚‘‚‘‚‘  \033[0m",
+		"\033[38;5;21;1m   ‚’‚’‚’‚’  \033[0m",
+	}
+	iconLightSnowShowers := []string{
+		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+		"\033[38;5;255m     *  *  * \033[0m",
+		"\033[38;5;255m    *  *  *  \033[0m",
+	}
+	iconHeavySnowShowers := []string{
+		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
+		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
+		"\033[38;5;255;1m    * * * *  \033[0m",
+		"\033[38;5;255;1m   * * * *   \033[0m",
+	}
+	iconLightSleetShowers := []string{
+		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+		"\033[38;5;111m     ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m* \033[0m",
+		"\033[38;5;255m    *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘  \033[0m",
+	}
+	iconThunderyShowers := []string{
+		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+		"\033[38;5;228;5m    ⚡\033[38;5;111;25m‘ ‘\033[38;5;228;5m⚡\033[38;5;111;25m‘ ‘ \033[0m",
+		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
+	}
+	iconThunderyHeavyRain := []string{
+		"\033[38;5;240;1m     .-.     \033[0m",
+		"\033[38;5;240;1m    (   ).   \033[0m",
+		"\033[38;5;240;1m   (___(__)  \033[0m",
+		"\033[38;5;21;1m  ‚‘\033[38;5;228;5m⚡\033[38;5;21;25m‘‚\033[38;5;228;5m⚡\033[38;5;21;25m‚‘   \033[0m",
+		"\033[38;5;21;1m  ‚’‚’\033[38;5;228;5m⚡\033[38;5;21;25m’‚’   \033[0m",
+	}
+	iconThunderySnowShowers := []string{
+		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+		"\033[38;5;255m     *\033[38;5;228;5m⚡\033[38;5;255;25m *\033[38;5;228;5m⚡\033[38;5;255;25m * \033[0m",
+		"\033[38;5;255m    *  *  *  \033[0m",
+	}
+	iconLightRain := []string{
+		"\033[38;5;250m     .-.     \033[0m",
+		"\033[38;5;250m    (   ).   \033[0m",
+		"\033[38;5;250m   (___(__)  \033[0m",
+		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
+		"\033[38;5;111m   ‘ ‘ ‘ ‘   \033[0m",
+	}
+	iconHeavyRain := []string{
+		"\033[38;5;240;1m     .-.     \033[0m",
+		"\033[38;5;240;1m    (   ).   \033[0m",
+		"\033[38;5;240;1m   (___(__)  \033[0m",
+		"\033[38;5;21;1m  ‚‘‚‘‚‘‚‘   \033[0m",
+		"\033[38;5;21;1m  ‚’‚’‚’‚’   \033[0m",
+	}
+	iconLightSnow := []string{
+		"\033[38;5;250m     .-.     \033[0m",
+		"\033[38;5;250m    (   ).   \033[0m",
+		"\033[38;5;250m   (___(__)  \033[0m",
+		"\033[38;5;255m    *  *  *  \033[0m",
+		"\033[38;5;255m   *  *  *   \033[0m",
+	}
+	iconHeavySnow := []string{
+		"\033[38;5;240;1m     .-.     \033[0m",
+		"\033[38;5;240;1m    (   ).   \033[0m",
+		"\033[38;5;240;1m   (___(__)  \033[0m",
+		"\033[38;5;255;1m   * * * *   \033[0m",
+		"\033[38;5;255;1m  * * * *    \033[0m",
+	}
+	iconLightSleet := []string{
+		"\033[38;5;250m     .-.     \033[0m",
+		"\033[38;5;250m    (   ).   \033[0m",
+		"\033[38;5;250m   (___(__)  \033[0m",
+		"\033[38;5;111m    ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m*  \033[0m",
+		"\033[38;5;255m   *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘   \033[0m",
+	}
+	iconFog := []string{
+		"             ",
+		"\033[38;5;251m _ - _ - _ - \033[0m",
+		"\033[38;5;251m  _ - _ - _  \033[0m",
+		"\033[38;5;251m _ - _ - _ - \033[0m",
+		"             ",
+	}
+	codes := map[int][]string{
 		113: iconSunny,
 		116: iconPartlyCloudy,
 		119: iconCloudy,
@@ -106,268 +377,8 @@ var (
 		392: iconThunderySnowShowers,
 		395: iconHeavySnowShowers,
 	}
-
-	iconUnknown = []string{
-		"    .-.      ",
-		"     __)     ",
-		"    (        ",
-		"     `-’     ",
-		"      •      "}
-	iconSunny = []string{
-		"\033[38;5;226m    \\   /    \033[0m",
-		"\033[38;5;226m     .-.     \033[0m",
-		"\033[38;5;226m  ― (   ) ―  \033[0m",
-		"\033[38;5;226m     `-’     \033[0m",
-		"\033[38;5;226m    /   \\    \033[0m"}
-	iconPartlyCloudy = []string{
-		"\033[38;5;226m   \\  /\033[0m      ",
-		"\033[38;5;226m _ /\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m   \\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"             "}
-	iconCloudy = []string{
-		"             ",
-		"\033[38;5;250m     .--.    \033[0m",
-		"\033[38;5;250m  .-(    ).  \033[0m",
-		"\033[38;5;250m (___.__)__) \033[0m",
-		"             "}
-	iconVeryCloudy = []string{
-		"             ",
-		"\033[38;5;240;1m     .--.    \033[0m",
-		"\033[38;5;240;1m  .-(    ).  \033[0m",
-		"\033[38;5;240;1m (___.__)__) \033[0m",
-		"             "}
-	iconLightShowers = []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;111m     ‘ ‘ ‘ ‘ \033[0m",
-		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m"}
-	iconHeavyShowers = []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
-		"\033[38;5;21;1m   ‚‘‚‘‚‘‚‘  \033[0m",
-		"\033[38;5;21;1m   ‚’‚’‚’‚’  \033[0m"}
-	iconLightSnowShowers = []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;255m     *  *  * \033[0m",
-		"\033[38;5;255m    *  *  *  \033[0m"}
-	iconHeavySnowShowers = []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
-		"\033[38;5;255;1m    * * * *  \033[0m",
-		"\033[38;5;255;1m   * * * *   \033[0m"}
-	iconLightSleetShowers = []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;111m     ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m* \033[0m",
-		"\033[38;5;255m    *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘  \033[0m"}
-	iconThunderyShowers = []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;228;5m    ⚡\033[38;5;111;25m‘ ‘\033[38;5;228;5m⚡\033[38;5;111;25m‘ ‘ \033[0m",
-		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m"}
-	iconThunderyHeavyRain = []string{
-		"\033[38;5;240;1m     .-.     \033[0m",
-		"\033[38;5;240;1m    (   ).   \033[0m",
-		"\033[38;5;240;1m   (___(__)  \033[0m",
-		"\033[38;5;21;1m  ‚‘\033[38;5;228;5m⚡\033[38;5;21;25m‘‚\033[38;5;228;5m⚡\033[38;5;21;25m‚‘   \033[0m",
-		"\033[38;5;21;1m  ‚’‚’\033[38;5;228;5m⚡\033[38;5;21;25m’‚’   \033[0m"}
-	iconThunderySnowShowers = []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;255m     *\033[38;5;228;5m⚡\033[38;5;255;25m *\033[38;5;228;5m⚡\033[38;5;255;25m * \033[0m",
-		"\033[38;5;255m    *  *  *  \033[0m"}
-	iconLightRain = []string{
-		"\033[38;5;250m     .-.     \033[0m",
-		"\033[38;5;250m    (   ).   \033[0m",
-		"\033[38;5;250m   (___(__)  \033[0m",
-		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
-		"\033[38;5;111m   ‘ ‘ ‘ ‘   \033[0m"}
-	iconHeavyRain = []string{
-		"\033[38;5;240;1m     .-.     \033[0m",
-		"\033[38;5;240;1m    (   ).   \033[0m",
-		"\033[38;5;240;1m   (___(__)  \033[0m",
-		"\033[38;5;21;1m  ‚‘‚‘‚‘‚‘   \033[0m",
-		"\033[38;5;21;1m  ‚’‚’‚’‚’   \033[0m"}
-	iconLightSnow = []string{
-		"\033[38;5;250m     .-.     \033[0m",
-		"\033[38;5;250m    (   ).   \033[0m",
-		"\033[38;5;250m   (___(__)  \033[0m",
-		"\033[38;5;255m    *  *  *  \033[0m",
-		"\033[38;5;255m   *  *  *   \033[0m"}
-	iconHeavySnow = []string{
-		"\033[38;5;240;1m     .-.     \033[0m",
-		"\033[38;5;240;1m    (   ).   \033[0m",
-		"\033[38;5;240;1m   (___(__)  \033[0m",
-		"\033[38;5;255;1m   * * * *   \033[0m",
-		"\033[38;5;255;1m  * * * *    \033[0m"}
-	iconLightSleet = []string{
-		"\033[38;5;250m     .-.     \033[0m",
-		"\033[38;5;250m    (   ).   \033[0m",
-		"\033[38;5;250m   (___(__)  \033[0m",
-		"\033[38;5;111m    ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m*  \033[0m",
-		"\033[38;5;255m   *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘   \033[0m"}
-	iconFog = []string{
-		"             ",
-		"\033[38;5;251m _ - _ - _ - \033[0m",
-		"\033[38;5;251m  _ - _ - _  \033[0m",
-		"\033[38;5;251m _ - _ - _ - \033[0m",
-		"             "}
-)
-
-const (
-	slotcount = 4
-)
-
-func pad(s string, mustLen int) (ret string) {
-	ret = s
-	realLen := utf8.RuneCountInString(ansiEsc.ReplaceAllLiteralString(s, ""))
-	delta := mustLen - realLen
-	if delta > 0 {
-		ret += "\033[0m" + strings.Repeat(" ", delta)
-	} else if delta < 0 {
-		toks := ansiEsc.Split(s, 2)
-		tokLen := utf8.RuneCountInString(toks[0])
-		esc := ansiEsc.FindString(s)
-		if tokLen > mustLen {
-			ret = fmt.Sprintf("%.*s\033[0m", mustLen, toks[0])
-		} else {
-			ret = fmt.Sprintf("%s%s%s", toks[0], esc, pad(toks[1], mustLen-tokLen))
-		}
-	}
-	return
-}
-
-func (c *asciiarttable) formatTemp(cond iface.Cond) string {
-	color := func(temp int) string {
-		var col = 21
-		switch temp {
-		case -15, -14, -13:
-			col = 27
-		case -12, -11, -10:
-			col = 33
-		case -9, -8, -7:
-			col = 39
-		case -6, -5, -4:
-			col = 45
-		case -3, -2, -1:
-			col = 51
-		case 0, 1:
-			col = 50
-		case 2, 3:
-			col = 49
-		case 4, 5:
-			col = 48
-		case 6, 7:
-			col = 47
-		case 8, 9:
-			col = 46
-		case 10, 11, 12:
-			col = 82
-		case 13, 14, 15:
-			col = 118
-		case 16, 17, 18:
-			col = 154
-		case 19, 20, 21:
-			col = 190
-		case 22, 23, 24:
-			col = 226
-		case 25, 26, 27:
-			col = 220
-		case 28, 29, 30:
-			col = 214
-		case 31, 32, 33:
-			col = 208
-		case 34, 35, 36:
-			col = 202
-		default:
-			if temp > 0 {
-				col = 196
-			}
-		}
-		if c.aatImperial {
-			temp = (temp*18 + 320) / 10
-		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
-	}
-	t := cond.TempC
-	if t == 0 {
-		t = cond.TempC2
-	}
-	if cond.FeelsLikeC < t {
-		return pad(fmt.Sprintf("%s – %s °%s", color(cond.FeelsLikeC), color(t), unitTemp[c.aatImperial]), 15)
-	} else if cond.FeelsLikeC > t {
-		return pad(fmt.Sprintf("%s – %s °%s", color(t), color(cond.FeelsLikeC), unitTemp[c.aatImperial]), 15)
-	}
-	return pad(fmt.Sprintf("%s °%s", color(cond.FeelsLikeC), unitTemp[c.aatImperial]), 15)
-}
-
-func (c *asciiarttable) formatWind(cond iface.Cond) string {
-	color := func(spd int) string {
-		var col = 46
-		switch spd {
-		case 1, 2, 3:
-			col = 82
-		case 4, 5, 6:
-			col = 118
-		case 7, 8, 9:
-			col = 154
-		case 10, 11, 12:
-			col = 190
-		case 13, 14, 15:
-			col = 226
-		case 16, 17, 18, 19:
-			col = 220
-		case 20, 21, 22, 23:
-			col = 214
-		case 24, 25, 26, 27:
-			col = 208
-		case 28, 29, 30, 31:
-			col = 202
-		default:
-			if spd > 0 {
-				col = 196
-			}
-		}
-		if c.aatImperial {
-			spd = (spd * 1000) / 1609
-		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
-	}
-	if cond.WindGustKmph > cond.WindspeedKmph {
-		return pad(fmt.Sprintf("%s %s – %s %s", windDir[cond.Winddir16Point], color(cond.WindspeedKmph), color(cond.WindGustKmph), unitWind[c.aatImperial]), 15)
-	}
-	return pad(fmt.Sprintf("%s %s %s", windDir[cond.Winddir16Point], color(cond.WindspeedKmph), unitWind[c.aatImperial]), 15)
-}
-
-func (c *asciiarttable) formatVisibility(cond iface.Cond) string {
-	if c.aatImperial {
-		cond.VisibleDistKM = (cond.VisibleDistKM * 621) / 1000
-	}
-	return pad(fmt.Sprintf("%d %s", cond.VisibleDistKM, unitVis[c.aatImperial]), 15)
-}
-
-func (c *asciiarttable) formatRain(cond iface.Cond) string {
-	rainUnit := float32(cond.PrecipMM)
-	if c.aatImperial {
-		rainUnit = float32(cond.PrecipMM) * 0.039
-	}
-	if cond.ChanceOfRain != "" {
-		return pad(fmt.Sprintf("%.1f %s | %s%%", rainUnit, unitRain[c.aatImperial], cond.ChanceOfRain), 15)
-	}
-	return pad(fmt.Sprintf("%.1f %s", rainUnit, unitRain[c.aatImperial]), 15)
-}
-
-func (c *asciiarttable) formatCond(cur []string, cond iface.Cond, current bool) (ret []string) {
 	var icon []string
+
 	if i, ok := codes[cond.WeatherCode]; !ok {
 		icon = iconUnknown
 	} else {
@@ -385,7 +396,9 @@ func (c *asciiarttable) formatCond(cur []string, cond iface.Cond, current bool) 
 	return
 }
 
-func (c *asciiarttable) printDay(w iface.Weather) (ret []string) {
+func (c *aatConfig) printDay(w iface.Weather) (ret []string) {
+	const slotcount = 4
+	slotTimes := [slotcount]int{9 * 60, 12 * 60, 18 * 60, 22 * 60}
 	hourly := w.Hourly
 	ret = make([]string, 5)
 	for i := range ret {
@@ -423,11 +436,11 @@ func (c *asciiarttable) printDay(w iface.Weather) (ret []string) {
 		"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
 }
 
-func (c *asciiarttable) Setup() {
-	flag.BoolVar(&c.aatImperial, "aat-imperial", false, "use imperial units for output")
+func (c *aatConfig) Setup() {
+	flag.BoolVar(&c.imperial, "aat-imperial", false, "use imperial units for output")
 }
 
-func (c *asciiarttable) Render(r iface.Resp) {
+func (c *aatConfig) Render(r iface.Resp) {
 	fmt.Printf("Weather for %s: %s\n\n", r.Data.Req[0].Type, r.Data.Req[0].Query)
 	stdout := colorable.NewColorableStdout()
 
@@ -453,6 +466,5 @@ func (c *asciiarttable) Render(r iface.Resp) {
 }
 
 func init() {
-	ansiEsc = regexp.MustCompile("\033.*?m")
-	All["ascii-art-table"] = &asciiarttable{}
+	All["ascii-art-table"] = &aatConfig{}
 }

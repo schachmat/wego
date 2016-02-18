@@ -21,11 +21,11 @@ type worldweatheronline struct {
 }
 
 const (
-	wuri = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
-	suri = "https://api.worldweatheronline.com/free/v2/search.ashx?"
+	wwoSuri = "https://api.worldweatheronline.com/free/v2/search.ashx?"
+	wwoWuri = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
 )
 
-func unmarshalLang(body []byte, r *iface.Resp, lang string) error {
+func wwoUnmarshalLang(body []byte, r *iface.Resp, lang string) error {
 	var rv map[string]interface{}
 	if err := json.Unmarshal(body, &rv); err != nil {
 		return err
@@ -104,7 +104,7 @@ func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
 		params = append(params, "lang="+c.wwoLanguage)
 	}
 
-	res, err := http.Get(wuri + strings.Join(params, "&"))
+	res, err := http.Get(wwoWuri + strings.Join(params, "&"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
 			log.Println(err)
 		}
 	} else {
-		if err = unmarshalLang(body, &ret, c.wwoLanguage); err != nil {
+		if err = wwoUnmarshalLang(body, &ret, c.wwoLanguage); err != nil {
 			log.Println(err)
 		}
 	}
