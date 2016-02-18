@@ -4,6 +4,8 @@ wego is a weather client for the terminal.
 
 ##Features
 
+![Screenshots](http://schachmat.github.io/wego/wego.gif)
+
 * show forecast for 1 to 5 days
 * nice ASCII art icons
 * displayed info (metric or imperial units):
@@ -15,8 +17,6 @@ wego is a weather client for the terminal.
 * multi language support
 * config file for default location which can be overridden by commandline
 * Automatic config management with [ingo](https://github.com/schachmat/ingo)
-
-![Screenshots](http://schachmat.github.io/wego/wego.gif)
 
 ##Dependencies
 
