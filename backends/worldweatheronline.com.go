@@ -1,8 +1,8 @@
 package backends
 
 import (
-	_ "crypto/sha512"
 	"bytes"
+	_ "crypto/sha512"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
@@ -15,7 +15,7 @@ import (
 	"github.com/schachmat/wego/iface"
 )
 
-type worldweatheronline struct {
+type wwoConfig struct {
 	wwoApiKey   string
 	wwoLanguage string
 }
@@ -81,12 +81,12 @@ func wwoUnmarshalLang(body []byte, r *iface.Resp, lang string) error {
 	return json.NewDecoder(&buf).Decode(r)
 }
 
-func (c *worldweatheronline) Setup() {
+func (c *wwoConfig) Setup() {
 	flag.StringVar(&c.wwoApiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
 	flag.StringVar(&c.wwoLanguage, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
 }
 
-func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
+func (c *wwoConfig) Fetch(loc string, numdays int) (ret iface.Resp) {
 	var params []string
 
 	if len(c.wwoApiKey) == 0 {
@@ -138,5 +138,5 @@ func (c *worldweatheronline) Fetch(loc string, numdays int) (ret iface.Resp) {
 }
 
 func init() {
-	All["worldweatheronline.com"] = &worldweatheronline{}
+	All["worldweatheronline.com"] = &wwoConfig{}
 }
