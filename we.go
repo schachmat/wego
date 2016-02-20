@@ -562,9 +562,7 @@ func unmarshalLang(body []byte, r *resp) error {
 	return nil
 }
 
-func getDataFromAPI() (ret resp) {
-	var params []string
-
+func constructQueryParameters() (params []string) {
 	if len(config.APIKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
 	}
@@ -588,6 +586,10 @@ func getDataFromAPI() (ret resp) {
 	if config.Lang != "" {
 		params = append(params, "lang="+config.Lang)
 	}
+	return
+}
+
+func getDataFromAPI(params []string) (ret resp) {
 
 	if debug {
 		fmt.Fprintln(os.Stderr, params)
@@ -604,10 +606,7 @@ func getDataFromAPI() (ret resp) {
 	}
 
 	if debug {
-		var out bytes.Buffer
-		json.Indent(&out, body, "", "  ")
-		out.WriteTo(os.Stderr)
-		fmt.Println("\n")
+		writeResponseToStderr(body)
 	}
 
 	if config.Lang == "" {
@@ -653,7 +652,8 @@ func init() {
 func main() {
 	flag.Parse()
 
-	r := getDataFromAPI()
+	params := constructQueryParameters()
+	r := getDataFromAPI(params)
 
 	if r.Data.Req == nil || len(r.Data.Req) < 1 {
 		if r.Data.Err != nil && len(r.Data.Err) >= 1 {
