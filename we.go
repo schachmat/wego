@@ -25,11 +25,12 @@ import (
 )
 
 type configuration struct {
-	APIKey   string
-	City     string
-	Numdays  int
-	Imperial bool
-	Lang     string
+	APIKey      string
+	City        string
+	Numdays     int
+	Imperial    bool
+	Lang        string
+	Coordinates bool
 }
 
 type cond struct {
@@ -65,6 +66,15 @@ type weather struct {
 type loc struct {
 	Query string `json:"query"`
 	Type  string `json:"type"`
+}
+
+type coordinateResp struct {
+	Search struct {
+		Result []struct {
+			Longitude string `json:"longitude"`
+			Latitude  string `json:"latitude"`
+		} `json:"result"`
+	} `json:"search_api"`
 }
 
 type resp struct {
@@ -621,10 +631,73 @@ func getDataFromAPI(params []string) (ret resp) {
 	return
 }
 
+func getCoordinatesFromAPI(queryParams []string) (c string) {
+	var coordResp coordinateResp
+	res, err := http.Get(suri + strings.Join(queryParams, "&"))
+	if err != nil {
+		return ""
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return ""
+	}
+
+	if debug {
+		writeResponseToStderr(body)
+	}
+
+	if err = json.Unmarshal(body, &coordResp); err != nil {
+		log.Println(err)
+		return ""
+	}
+
+	return formatCoordinates(coordResp.Search.Result[0].Latitude,
+		coordResp.Search.Result[0].Longitude)
+}
+
+func formatCoordinates(latitude, longitude string) (formatted string) {
+	var formattedLon, formattedLat string
+	lat, err := strconv.ParseFloat(latitude, 64)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	} else {
+		formattedLat += fmt.Sprintf("%v°", int(math.Abs(lat)))
+		if lat > 0 {
+			formattedLat += " North"
+		} else if lat < 0 {
+			formattedLat += " South"
+		}
+	}
+
+	lon, err := strconv.ParseFloat(longitude, 64)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	} else {
+		formattedLon += fmt.Sprintf("%v°", int(math.Abs(lon)))
+		if lon > 0 {
+			formattedLon += " East"
+		} else if lon < 0 {
+			formattedLon += " West"
+		}
+	}
+	return fmt.Sprintf(" (%s, %s)", formattedLat, formattedLon)
+}
+
+func writeResponseToStderr(body []byte) {
+	var out bytes.Buffer
+	json.Indent(&out, body, "", "  ")
+	out.WriteTo(os.Stderr)
+	fmt.Println("\n")
+}
+
 func init() {
 	flag.IntVar(&config.Numdays, "days", 3, "Number of days of weather forecast to be displayed")
 	flag.StringVar(&config.City, "city", "New York", "City to be queried")
 	flag.BoolVar(&debug, "debug", false, "Print out raw json response for debugging purposes")
+	flag.BoolVar(&config.Coordinates, "coords", false, "Print out geo coordinates of the city")
 	configpath = os.Getenv("WEGORC")
 	if configpath == "" {
 		usr, err := user.Current()
@@ -661,7 +734,14 @@ func main() {
 		}
 		log.Fatal("Malformed response.")
 	}
-	fmt.Printf("Weather for %s: %s\n\n", r.Data.Req[0].Type, r.Data.Req[0].Query)
+
+	if config.Coordinates {
+		fmt.Printf("Weather for %s: %s %s\n\n", r.Data.Req[0].Type, r.Data.Req[0].Query,
+			getCoordinatesFromAPI(params))
+	} else {
+		fmt.Printf("Weather for %s: %s\n\n", r.Data.Req[0].Type, r.Data.Req[0].Query)
+	}
+
 	stdout := colorable.NewColorableStdout()
 
 	if r.Data.Cur == nil || len(r.Data.Cur) < 1 {
