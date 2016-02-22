@@ -421,8 +421,13 @@ func formatWind(c cond) string {
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
 	}
 	if c.WindGustKmph > c.WindspeedKmph {
-		return pad(fmt.Sprintf("%s %s – %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial]), 15)
+		if(runewidth.StringWidth("─") == 2){
+			return pad(fmt.Sprintf("%s%s – %s%s", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial]), 14)
+		}else{
+			return pad(fmt.Sprintf("%s %s – %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), color(c.WindGustKmph), unitWind[config.Imperial]), 15)
+		}
 	}
+	
 	return pad(fmt.Sprintf("%s %s %s", windDir[c.Winddir16Point], color(c.WindspeedKmph), unitWind[config.Imperial]), 15)
 }
 
@@ -680,6 +685,14 @@ func main() {
 	}
 	for _, d := range r.Data.Weather {
 		for _, val := range printDay(d) {
+			if(runewidth.StringWidth("─") == 2){
+				rep := strings.NewReplacer("─", "-", "│", "|", "┼", "+",
+					"┬", "+", "┴", "+", "┤", "+", "┌", "+", "┐", "+",
+					"└", "+", "┘", "+", "├", "+", "°C", "℃",
+					"‘", "`", "’", "'", "–", "-", "―", "-",
+				)
+				val = rep.Replace(val)
+			}
 			fmt.Fprintln(stdout, val)
 		}
 	}
