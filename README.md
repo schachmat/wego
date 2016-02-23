@@ -54,7 +54,7 @@ file location.
 
 ##Todo
 
-* more [backends and frontends](https://github.com/schachmat/wego/wiki/How-to-write-a-new-backend-frontend)
+* more [backends and frontends](https://github.com/schachmat/wego/wiki/How-to-write-a-new-backend-or-frontend)
 * resolve ALL the [issues](https://github.com/schachmat/wego/issues)
 * don't forget the [TODOs in the code](https://github.com/schachmat/wego/search?q=TODO&type=Code)
 
