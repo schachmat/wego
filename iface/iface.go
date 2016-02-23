@@ -2,6 +2,7 @@ package iface
 
 import (
 	"time"
+	"log"
 )
 
 type WeatherCode int
@@ -51,11 +52,11 @@ type Cond struct {
 	// range [0, 100].
 	ChanceOfRainPercent *int
 
-	// PrecipMM is the precipitation amount. It must be >= 0.
-	PrecipMM *float32
+	// PrecipM is the precipitation amount in meters(!). It must be >= 0.
+	PrecipM *float32
 
-	// VisibleDistKM is the visibility range in kilometers. It must be >= 0.
-	VisibleDistKM *float32
+	// VisibleDistM is the visibility range in meters(!). It must be >= 0.
+	VisibleDistM *float32
 
 	// WindspeedKmph is the average wind speed in kilometers per second.
 	WindspeedKmph *float32
@@ -103,6 +104,61 @@ type Data struct {
 	Location string
 }
 
+type UnitSystem int
+
+const (
+	UnitsMetric UnitSystem = iota
+	UnitsImperial
+	UnitsSi
+)
+
+func (u UnitSystem) Temp(tempC float32) (res float32, unit string) {
+	if u == UnitsMetric {
+		return tempC, "°C"
+	} else if u == UnitsImperial {
+		return tempC*1.8 + 32, "°F"
+	} else if u == UnitsSi {
+		return tempC + 273.16, "°K"
+	}
+	log.Fatalln("Unknown unit system:", u)
+	return
+}
+
+func (u UnitSystem) Speed(spdKmph float32) (res float32, unit string) {
+	if u == UnitsMetric {
+		return spdKmph, "km/h"
+	} else if u == UnitsImperial {
+		return spdKmph/1.609, "mph"
+	} else if u == UnitsSi {
+		return spdKmph/3.6, "m/s"
+	}
+	log.Fatalln("Unknown unit system:", u)
+	return
+}
+
+func (u UnitSystem) Distance(distM float32) (res float32, unit string) {
+	if u == UnitsMetric || u == UnitsSi {
+		if distM < 1 {
+			return distM*1000, "mm"
+		} else if distM < 1000 {
+			return distM, "m"
+		} else {
+			return distM/1000, "km"
+		}
+	} else if u == UnitsImperial {
+		res, unit = distM/0.0254, "in"
+		if res < 3 * 12 { // 1yd = 3ft, 1ft = 12in
+			return
+		} else if res < 8 * 10 * 22 * 36 { //1mi = 8fur, 1fur = 10ch, 1ch = 22yd
+			return res / 36, "yd"
+		} else {
+			return res / 8 / 10 / 22 / 36, "mi"
+		}
+	}
+	log.Fatalln("Unknown unit system:", u)
+	return
+}
+
 type Backend interface {
 	Setup()
 	Fetch(location string, numdays int) Data
@@ -110,7 +166,7 @@ type Backend interface {
 
 type Frontend interface {
 	Setup()
-	Render(weather Data)
+	Render(weather Data, unitSystem UnitSystem)
 }
 
 var (

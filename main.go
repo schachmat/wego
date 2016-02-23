@@ -35,6 +35,7 @@ func main() {
 	// initialize global flags and default config
 	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
 	location := flag.String("city", "New York", "`LOCATION` to be queried")
+	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si")
 	selectedBackend := flag.String("backend", "worldweatheronline.com", "`BACKEND` to be used")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 
@@ -57,10 +58,18 @@ func main() {
 	}
 	r := be.Fetch(*location, *numdays)
 
+	// set unit system
+	unit := iface.UnitsMetric
+	if *unitSystem == "imperial" {
+		unit = iface.UnitsImperial
+	} else if *unitSystem == "si" {
+		unit = iface.UnitsSi
+	}
+
 	// get selected frontend and render the weather data with it
 	fe, ok := iface.AllFrontends[*selectedFrontend]
 	if !ok {
 		log.Fatalf("Could not find selected frontend \"%s\"", *selectedFrontend)
 	}
-	fe.Render(r)
+	fe.Render(r, unit)
 }

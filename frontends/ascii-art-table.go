@@ -1,7 +1,6 @@
 package frontends
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -16,7 +15,7 @@ import (
 )
 
 type aatConfig struct {
-	imperial bool
+	unit iface.UnitSystem
 }
 
 //TODO: replace s parameter with printf interface?
@@ -41,10 +40,6 @@ func aatPad(s string, mustLen int) (ret string) {
 }
 
 func (c *aatConfig) formatTemp(cond iface.Cond) string {
-	unit := map[bool]string{
-		false: "C",
-		true:  "F",
-	}
 	color := func(temp float32) string {
 		colmap := []struct {
 			maxtemp float32
@@ -63,34 +58,29 @@ func (c *aatConfig) formatTemp(cond iface.Cond) string {
 				break
 			}
 		}
-
-		if c.imperial {
-			temp = (temp*18 + 320) / 10
-		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(temp))
+		t, _ := c.unit.Temp(temp)
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(t))
 	}
 
+	_, u := c.unit.Temp(0.0)
+
 	if cond.TempC == nil {
-		return aatPad(fmt.Sprintf("? °%s", unit[c.imperial]), 15)
+		return aatPad(fmt.Sprintf("? %s", u), 15)
 	}
 
 	t := *cond.TempC
 	if cond.FeelsLikeC != nil {
 		fl := *cond.FeelsLikeC
 		if fl < t {
-			return aatPad(fmt.Sprintf("%s – %s °%s", color(fl), color(t), unit[c.imperial]), 15)
+			return aatPad(fmt.Sprintf("%s – %s %s", color(fl), color(t), u), 15)
 		} else if fl > t {
-			return aatPad(fmt.Sprintf("%s – %s °%s", color(t), color(fl), unit[c.imperial]), 15)
+			return aatPad(fmt.Sprintf("%s – %s %s", color(t), color(fl), u), 15)
 		}
 	}
-	return aatPad(fmt.Sprintf("%s °%s", color(t), unit[c.imperial]), 15)
+	return aatPad(fmt.Sprintf("%s %s", color(t), u), 15)
 }
 
 func (c *aatConfig) formatWind(cond iface.Cond) string {
-	unit := map[bool]string{
-		false: "km/h",
-		true:  "mph",
-	}
 	windDir := func(deg *int) string {
 		if deg == nil {
 			return "?"
@@ -115,11 +105,11 @@ func (c *aatConfig) formatWind(cond iface.Cond) string {
 			}
 		}
 
-		if c.imperial {
-			spdKmph = (spdKmph * 1000) / 1609
-		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(spdKmph))
+		s, _ := c.unit.Speed(spdKmph)
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(s))
 	}
+
+	_, u := c.unit.Speed(0.0)
 
 	if cond.WindspeedKmph == nil {
 		return aatPad(windDir(cond.WinddirDegree), 15)
@@ -128,44 +118,28 @@ func (c *aatConfig) formatWind(cond iface.Cond) string {
 
 	if cond.WindGustKmph != nil {
 		if g := *cond.WindGustKmph; g > s {
-			return aatPad(fmt.Sprintf("%s %s – %s %s", windDir(cond.WinddirDegree), color(s), color(g), unit[c.imperial]), 15)
+			return aatPad(fmt.Sprintf("%s %s – %s %s", windDir(cond.WinddirDegree), color(s), color(g), u), 15)
 		}
 	}
 
-	return aatPad(fmt.Sprintf("%s %s %s", windDir(cond.WinddirDegree), color(s), unit[c.imperial]), 15)
+	return aatPad(fmt.Sprintf("%s %s %s", windDir(cond.WinddirDegree), color(s), u), 15)
 }
 
 func (c *aatConfig) formatVisibility(cond iface.Cond) string {
-	unit := map[bool]string{
-		false: "km",
-		true:  "mi",
-	}
-	if cond.VisibleDistKM == nil {
+	if cond.VisibleDistM == nil {
 		return aatPad("", 15)
 	}
-	v := *cond.VisibleDistKM
-
-	if c.imperial {
-		v = (v * 621) / 1000
-	}
-	return aatPad(fmt.Sprintf("%d %s", int(v), unit[c.imperial]), 15)
+	v, u := c.unit.Distance(*cond.VisibleDistM)
+	return aatPad(fmt.Sprintf("%d %s", int(v), u), 15)
 }
 
 func (c *aatConfig) formatRain(cond iface.Cond) string {
-	unit := map[bool]string{
-		false: "mm",
-		true:  "in",
-	}
-	if cond.PrecipMM != nil {
-		a := *cond.PrecipMM
-		if c.imperial {
-			a *= 0.039
-		}
-
+	if cond.PrecipM != nil {
+		v, u := c.unit.Distance(*cond.PrecipM)
 		if cond.ChanceOfRainPercent != nil {
-			return aatPad(fmt.Sprintf("%.1f %s | %d%%", a, unit[c.imperial], *cond.ChanceOfRainPercent), 15)
+			return aatPad(fmt.Sprintf("%.1f %s | %d%%", v, u, *cond.ChanceOfRainPercent), 15)
 		}
-		return aatPad(fmt.Sprintf("%.1f %s", a, unit[c.imperial]), 15)
+		return aatPad(fmt.Sprintf("%.1f %s", v, u), 15)
 	} else if cond.ChanceOfRainPercent != nil {
 		return aatPad(fmt.Sprintf("%d%%", *cond.ChanceOfRainPercent), 15)
 	}
@@ -371,10 +345,11 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 }
 
 func (c *aatConfig) Setup() {
-	flag.BoolVar(&c.imperial, "aat-imperial", false, "aat frontend: use imperial units for output")
 }
 
-func (c *aatConfig) Render(r iface.Data) {
+func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
+	c.unit = unitSystem
+
 	fmt.Printf("Weather for %s\n\n", r.Location)
 	stdout := colorable.NewColorableStdout()
 
