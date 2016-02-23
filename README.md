@@ -18,8 +18,10 @@
 
 ##Dependencies
 
-* Go 1.5 (You can use [goenv](https://github.com/pwoolcoc/goenv) if
-  your distribution does not support Go 1.5 yet)
+* A [working](https://golang.org/doc/install#testing) [Go](https://golang.org/)
+  [1.5](https://golang.org/doc/go1.5) environment (You can use
+  [goenv](https://github.com/pwoolcoc/goenv) if your distribution does not
+  support Go 1.5 yet)
 * utf-8 terminal with 256 colors (I use the dejavu font)
 * A worldweatheronline.com API key (see Setup below)
 
@@ -54,7 +56,8 @@ file location.
 
 * more backends and frontends
 * resolve ALL the [issues](https://github.com/schachmat/wego/issues)
-* don't forget the [TODOs in the code](https://github.com/schachmat/wego/search?q=TODO&type=Code)
+* don't forget the [TODOs in the
+  code](https://github.com/schachmat/wego/search?q=TODO&type=Code)
 
 ##License - ISC
 
