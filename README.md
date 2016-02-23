@@ -54,10 +54,9 @@ file location.
 
 ##Todo
 
-* more backends and frontends
+* more [backends and frontends](https://github.com/schachmat/wego/wiki/How-to-write-a-new-backend-frontend)
 * resolve ALL the [issues](https://github.com/schachmat/wego/issues)
-* don't forget the [TODOs in the
-  code](https://github.com/schachmat/wego/search?q=TODO&type=Code)
+* don't forget the [TODOs in the code](https://github.com/schachmat/wego/search?q=TODO&type=Code)
 
 ##License - ISC
 
