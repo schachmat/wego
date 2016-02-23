@@ -19,6 +19,7 @@ type aatConfig struct {
 	imperial bool
 }
 
+//TODO: replace s parameter with printf interface?
 func aatPad(s string, mustLen int) (ret string) {
 	ansiEsc := regexp.MustCompile("\033.*?m")
 	ret = s
@@ -44,67 +45,69 @@ func (c *aatConfig) formatTemp(cond iface.Cond) string {
 		false: "C",
 		true:  "F",
 	}
-	color := func(temp int) string {
-		var col = 21
-		switch temp {
-		case -15, -14, -13:
+	color := func(temp float32) string {
+		col := 196
+		if temp < -15 {
+			col = 21
+		} else if temp < -12 {
 			col = 27
-		case -12, -11, -10:
+		} else if temp < -9 {
 			col = 33
-		case -9, -8, -7:
+		} else if temp < -6 {
 			col = 39
-		case -6, -5, -4:
+		} else if temp < -3 {
 			col = 45
-		case -3, -2, -1:
+		} else if temp < 0 {
 			col = 51
-		case 0, 1:
+		} else if temp < 2 {
 			col = 50
-		case 2, 3:
+		} else if temp < 4 {
 			col = 49
-		case 4, 5:
+		} else if temp < 6 {
 			col = 48
-		case 6, 7:
+		} else if temp < 8 {
 			col = 47
-		case 8, 9:
+		} else if temp < 10 {
 			col = 46
-		case 10, 11, 12:
+		} else if temp < 13 {
 			col = 82
-		case 13, 14, 15:
+		} else if temp < 16 {
 			col = 118
-		case 16, 17, 18:
+		} else if temp < 19 {
 			col = 154
-		case 19, 20, 21:
+		} else if temp < 22 {
 			col = 190
-		case 22, 23, 24:
+		} else if temp < 25 {
 			col = 226
-		case 25, 26, 27:
+		} else if temp < 28 {
 			col = 220
-		case 28, 29, 30:
+		} else if temp < 31 {
 			col = 214
-		case 31, 32, 33:
+		} else if temp < 34 {
 			col = 208
-		case 34, 35, 36:
+		} else if temp < 37 {
 			col = 202
-		default:
-			if temp > 0 {
-				col = 196
-			}
 		}
 		if c.imperial {
 			temp = (temp*18 + 320) / 10
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, temp)
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(temp))
 	}
-	t := cond.TempC
-	if t == 0 {
-		t = cond.TempC2
+
+	if cond.TempC == nil {
+		return aatPad(fmt.Sprintf("? °%s", unit[c.imperial]), 15)
 	}
-	if cond.FeelsLikeC < t {
-		return aatPad(fmt.Sprintf("%s – %s °%s", color(cond.FeelsLikeC), color(t), unit[c.imperial]), 15)
-	} else if cond.FeelsLikeC > t {
-		return aatPad(fmt.Sprintf("%s – %s °%s", color(t), color(cond.FeelsLikeC), unit[c.imperial]), 15)
+
+	t := *cond.TempC
+	if cond.FeelsLikeC != nil {
+		fl := *cond.FeelsLikeC
+		if fl < t {
+			return aatPad(fmt.Sprintf("%s – %s °%s", color(fl), color(t), unit[c.imperial]), 15)
+		} else if fl > t {
+			return aatPad(fmt.Sprintf("%s – %s °%s", color(t), color(fl), unit[c.imperial]), 15)
+		}
 	}
-	return aatPad(fmt.Sprintf("%s °%s", color(cond.FeelsLikeC), unit[c.imperial]), 15)
+	return aatPad(fmt.Sprintf("%s °%s", color(t), unit[c.imperial]), 15)
 }
 
 func (c *aatConfig) formatWind(cond iface.Cond) string {
@@ -112,59 +115,54 @@ func (c *aatConfig) formatWind(cond iface.Cond) string {
 		false: "km/h",
 		true:  "mph",
 	}
-	windDir := map[string]string{
-		"N":   "\033[1m↓\033[0m",
-		"NNE": "\033[1m↓\033[0m",
-		"NE":  "\033[1m↙\033[0m",
-		"ENE": "\033[1m↙\033[0m",
-		"E":   "\033[1m←\033[0m",
-		"ESE": "\033[1m←\033[0m",
-		"SE":  "\033[1m↖\033[0m",
-		"SSE": "\033[1m↖\033[0m",
-		"S":   "\033[1m↑\033[0m",
-		"SSW": "\033[1m↑\033[0m",
-		"SW":  "\033[1m↗\033[0m",
-		"WSW": "\033[1m↗\033[0m",
-		"W":   "\033[1m→\033[0m",
-		"WNW": "\033[1m→\033[0m",
-		"NW":  "\033[1m↘\033[0m",
-		"NNW": "\033[1m↘\033[0m",
+	windDir := func(deg *int) string {
+		if deg == nil {
+			return "?"
+		}
+		arrows := []string{"↓", "↙", "←", "↖", "↑", "↗", "→", "↘"}
+		return "\033[1m" + arrows[((*deg+22)%360)/45] + "\033[0m"
 	}
-	color := func(spd int) string {
-		var col = 46
-		switch spd {
-		case 1, 2, 3:
+	color := func(spdKmph float32) string {
+		col := 196
+		if spdKmph <= 0 {
+			col = 46
+		} else if spdKmph < 4 {
 			col = 82
-		case 4, 5, 6:
+		} else if spdKmph < 7 {
 			col = 118
-		case 7, 8, 9:
+		} else if spdKmph < 10 {
 			col = 154
-		case 10, 11, 12:
+		} else if spdKmph < 13 {
 			col = 190
-		case 13, 14, 15:
+		} else if spdKmph < 16 {
 			col = 226
-		case 16, 17, 18, 19:
+		} else if spdKmph < 20 {
 			col = 220
-		case 20, 21, 22, 23:
+		} else if spdKmph < 24 {
 			col = 214
-		case 24, 25, 26, 27:
+		} else if spdKmph < 28 {
 			col = 208
-		case 28, 29, 30, 31:
+		} else if spdKmph < 32 {
 			col = 202
-		default:
-			if spd > 0 {
-				col = 196
-			}
 		}
 		if c.imperial {
-			spd = (spd * 1000) / 1609
+			spdKmph = (spdKmph * 1000) / 1609
 		}
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, spd)
+		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(spdKmph))
 	}
-	if cond.WindGustKmph > cond.WindspeedKmph {
-		return aatPad(fmt.Sprintf("%s %s – %s %s", windDir[cond.Winddir16Point], color(cond.WindspeedKmph), color(cond.WindGustKmph), unit[c.imperial]), 15)
+
+	if cond.WindspeedKmph == nil {
+		return aatPad(windDir(cond.WinddirDegree), 15)
 	}
-	return aatPad(fmt.Sprintf("%s %s %s", windDir[cond.Winddir16Point], color(cond.WindspeedKmph), unit[c.imperial]), 15)
+	s := *cond.WindspeedKmph
+
+	if cond.WindGustKmph != nil {
+		if g := *cond.WindGustKmph; g > s {
+			return aatPad(fmt.Sprintf("%s %s – %s %s", windDir(cond.WinddirDegree), color(s), color(g), unit[c.imperial]), 15)
+		}
+	}
+
+	return aatPad(fmt.Sprintf("%s %s %s", windDir(cond.WinddirDegree), color(s), unit[c.imperial]), 15)
 }
 
 func (c *aatConfig) formatVisibility(cond iface.Cond) string {
@@ -172,10 +170,15 @@ func (c *aatConfig) formatVisibility(cond iface.Cond) string {
 		false: "km",
 		true:  "mi",
 	}
-	if c.imperial {
-		cond.VisibleDistKM = (cond.VisibleDistKM * 621) / 1000
+	if cond.VisibleDistKM == nil {
+		return aatPad("", 15)
 	}
-	return aatPad(fmt.Sprintf("%d %s", cond.VisibleDistKM, unit[c.imperial]), 15)
+	v := *cond.VisibleDistKM
+
+	if c.imperial {
+		v = (v * 621) / 1000
+	}
+	return aatPad(fmt.Sprintf("%d %s", int(v), unit[c.imperial]), 15)
 }
 
 func (c *aatConfig) formatRain(cond iface.Cond) string {
@@ -183,211 +186,169 @@ func (c *aatConfig) formatRain(cond iface.Cond) string {
 		false: "mm",
 		true:  "in",
 	}
-	val := float32(cond.PrecipMM)
-	if c.imperial {
-		val = float32(cond.PrecipMM) * 0.039
+	if cond.PrecipMM != nil {
+		a := *cond.PrecipMM
+		if c.imperial {
+			a *= 0.039
+		}
+
+		if cond.ChanceOfRainPercent != nil {
+			return aatPad(fmt.Sprintf("%.1f %s | %d%%", a, unit[c.imperial], *cond.ChanceOfRainPercent), 15)
+		}
+		return aatPad(fmt.Sprintf("%.1f %s", a, unit[c.imperial]), 15)
+	} else if cond.ChanceOfRainPercent != nil {
+		return aatPad(fmt.Sprintf("%d%%", *cond.ChanceOfRainPercent), 15)
 	}
-	if cond.ChanceOfRain != "" {
-		return aatPad(fmt.Sprintf("%.1f %s | %s%%", val, unit[c.imperial], cond.ChanceOfRain), 15)
-	}
-	return aatPad(fmt.Sprintf("%.1f %s", val, unit[c.imperial]), 15)
+	return aatPad("", 15)
 }
 
 func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret []string) {
-	iconUnknown := []string{
-		"    .-.      ",
-		"     __)     ",
-		"    (        ",
-		"     `-’     ",
-		"      •      ",
+	codes := map[iface.WeatherCode][]string{
+		iface.CodeUnknown: {
+			"    .-.      ",
+			"     __)     ",
+			"    (        ",
+			"     `-’     ",
+			"      •      ",
+		},
+		iface.CodeCloudy: {
+			"             ",
+			"\033[38;5;250m     .--.    \033[0m",
+			"\033[38;5;250m  .-(    ).  \033[0m",
+			"\033[38;5;250m (___.__)__) \033[0m",
+			"             ",
+		},
+		iface.CodeFog: {
+			"             ",
+			"\033[38;5;251m _ - _ - _ - \033[0m",
+			"\033[38;5;251m  _ - _ - _  \033[0m",
+			"\033[38;5;251m _ - _ - _ - \033[0m",
+			"             ",
+		},
+		iface.CodeHeavyRain: {
+			"\033[38;5;240;1m     .-.     \033[0m",
+			"\033[38;5;240;1m    (   ).   \033[0m",
+			"\033[38;5;240;1m   (___(__)  \033[0m",
+			"\033[38;5;21;1m  ‚‘‚‘‚‘‚‘   \033[0m",
+			"\033[38;5;21;1m  ‚’‚’‚’‚’   \033[0m",
+		},
+		iface.CodeHeavyShowers: {
+			"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
+			"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
+			"\033[38;5;21;1m   ‚‘‚‘‚‘‚‘  \033[0m",
+			"\033[38;5;21;1m   ‚’‚’‚’‚’  \033[0m",
+		},
+		iface.CodeHeavySnow: {
+			"\033[38;5;240;1m     .-.     \033[0m",
+			"\033[38;5;240;1m    (   ).   \033[0m",
+			"\033[38;5;240;1m   (___(__)  \033[0m",
+			"\033[38;5;255;1m   * * * *   \033[0m",
+			"\033[38;5;255;1m  * * * *    \033[0m",
+		},
+		iface.CodeHeavySnowShowers: {
+			"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
+			"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
+			"\033[38;5;255;1m    * * * *  \033[0m",
+			"\033[38;5;255;1m   * * * *   \033[0m",
+		},
+		iface.CodeLightRain: {
+			"\033[38;5;250m     .-.     \033[0m",
+			"\033[38;5;250m    (   ).   \033[0m",
+			"\033[38;5;250m   (___(__)  \033[0m",
+			"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
+			"\033[38;5;111m   ‘ ‘ ‘ ‘   \033[0m",
+		},
+		iface.CodeLightShowers: {
+			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+			"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+			"\033[38;5;111m     ‘ ‘ ‘ ‘ \033[0m",
+			"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
+		},
+		iface.CodeLightSleet: {
+			"\033[38;5;250m     .-.     \033[0m",
+			"\033[38;5;250m    (   ).   \033[0m",
+			"\033[38;5;250m   (___(__)  \033[0m",
+			"\033[38;5;111m    ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m*  \033[0m",
+			"\033[38;5;255m   *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘   \033[0m",
+		},
+		iface.CodeLightSleetShowers: {
+			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+			"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+			"\033[38;5;111m     ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m* \033[0m",
+			"\033[38;5;255m    *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘  \033[0m",
+		},
+		iface.CodeLightSnow: {
+			"\033[38;5;250m     .-.     \033[0m",
+			"\033[38;5;250m    (   ).   \033[0m",
+			"\033[38;5;250m   (___(__)  \033[0m",
+			"\033[38;5;255m    *  *  *  \033[0m",
+			"\033[38;5;255m   *  *  *   \033[0m",
+		},
+		iface.CodeLightSnowShowers: {
+			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+			"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+			"\033[38;5;255m     *  *  * \033[0m",
+			"\033[38;5;255m    *  *  *  \033[0m",
+		},
+		iface.CodePartlyCloudy: {
+			"\033[38;5;226m   \\  /\033[0m      ",
+			"\033[38;5;226m _ /\"\"\033[38;5;250m.-.    \033[0m",
+			"\033[38;5;226m   \\_\033[38;5;250m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+			"             ",
+		},
+		iface.CodeSunny: {
+			"\033[38;5;226m    \\   /    \033[0m",
+			"\033[38;5;226m     .-.     \033[0m",
+			"\033[38;5;226m  ― (   ) ―  \033[0m",
+			"\033[38;5;226m     `-’     \033[0m",
+			"\033[38;5;226m    /   \\    \033[0m",
+		},
+		iface.CodeThunderyHeavyRain: {
+			"\033[38;5;240;1m     .-.     \033[0m",
+			"\033[38;5;240;1m    (   ).   \033[0m",
+			"\033[38;5;240;1m   (___(__)  \033[0m",
+			"\033[38;5;21;1m  ‚‘\033[38;5;228;5m⚡\033[38;5;21;25m‘‚\033[38;5;228;5m⚡\033[38;5;21;25m‚‘   \033[0m",
+			"\033[38;5;21;1m  ‚’‚’\033[38;5;228;5m⚡\033[38;5;21;25m’‚’   \033[0m",
+		},
+		iface.CodeThunderyShowers: {
+			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+			"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+			"\033[38;5;228;5m    ⚡\033[38;5;111;25m‘ ‘\033[38;5;228;5m⚡\033[38;5;111;25m‘ ‘ \033[0m",
+			"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
+		},
+		iface.CodeThunderySnowShowers: {
+			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
+			"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
+			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+			"\033[38;5;255m     *\033[38;5;228;5m⚡\033[38;5;255;25m *\033[38;5;228;5m⚡\033[38;5;255;25m * \033[0m",
+			"\033[38;5;255m    *  *  *  \033[0m",
+		},
+		iface.CodeVeryCloudy: {
+			"             ",
+			"\033[38;5;240;1m     .--.    \033[0m",
+			"\033[38;5;240;1m  .-(    ).  \033[0m",
+			"\033[38;5;240;1m (___.__)__) \033[0m",
+			"             ",
+		},
 	}
-	iconSunny := []string{
-		"\033[38;5;226m    \\   /    \033[0m",
-		"\033[38;5;226m     .-.     \033[0m",
-		"\033[38;5;226m  ― (   ) ―  \033[0m",
-		"\033[38;5;226m     `-’     \033[0m",
-		"\033[38;5;226m    /   \\    \033[0m",
-	}
-	iconPartlyCloudy := []string{
-		"\033[38;5;226m   \\  /\033[0m      ",
-		"\033[38;5;226m _ /\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m   \\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"             ",
-	}
-	iconCloudy := []string{
-		"             ",
-		"\033[38;5;250m     .--.    \033[0m",
-		"\033[38;5;250m  .-(    ).  \033[0m",
-		"\033[38;5;250m (___.__)__) \033[0m",
-		"             ",
-	}
-	iconVeryCloudy := []string{
-		"             ",
-		"\033[38;5;240;1m     .--.    \033[0m",
-		"\033[38;5;240;1m  .-(    ).  \033[0m",
-		"\033[38;5;240;1m (___.__)__) \033[0m",
-		"             ",
-	}
-	iconLightShowers := []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;111m     ‘ ‘ ‘ ‘ \033[0m",
-		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
-	}
-	iconHeavyShowers := []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
-		"\033[38;5;21;1m   ‚‘‚‘‚‘‚‘  \033[0m",
-		"\033[38;5;21;1m   ‚’‚’‚’‚’  \033[0m",
-	}
-	iconLightSnowShowers := []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;255m     *  *  * \033[0m",
-		"\033[38;5;255m    *  *  *  \033[0m",
-	}
-	iconHeavySnowShowers := []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;240;1m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
-		"\033[38;5;255;1m    * * * *  \033[0m",
-		"\033[38;5;255;1m   * * * *   \033[0m",
-	}
-	iconLightSleetShowers := []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;111m     ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m* \033[0m",
-		"\033[38;5;255m    *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘  \033[0m",
-	}
-	iconThunderyShowers := []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;228;5m    ⚡\033[38;5;111;25m‘ ‘\033[38;5;228;5m⚡\033[38;5;111;25m‘ ‘ \033[0m",
-		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
-	}
-	iconThunderyHeavyRain := []string{
-		"\033[38;5;240;1m     .-.     \033[0m",
-		"\033[38;5;240;1m    (   ).   \033[0m",
-		"\033[38;5;240;1m   (___(__)  \033[0m",
-		"\033[38;5;21;1m  ‚‘\033[38;5;228;5m⚡\033[38;5;21;25m‘‚\033[38;5;228;5m⚡\033[38;5;21;25m‚‘   \033[0m",
-		"\033[38;5;21;1m  ‚’‚’\033[38;5;228;5m⚡\033[38;5;21;25m’‚’   \033[0m",
-	}
-	iconThunderySnowShowers := []string{
-		"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
-		"\033[38;5;226m  ,\\_\033[38;5;250m(   ).  \033[0m",
-		"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
-		"\033[38;5;255m     *\033[38;5;228;5m⚡\033[38;5;255;25m *\033[38;5;228;5m⚡\033[38;5;255;25m * \033[0m",
-		"\033[38;5;255m    *  *  *  \033[0m",
-	}
-	iconLightRain := []string{
-		"\033[38;5;250m     .-.     \033[0m",
-		"\033[38;5;250m    (   ).   \033[0m",
-		"\033[38;5;250m   (___(__)  \033[0m",
-		"\033[38;5;111m    ‘ ‘ ‘ ‘  \033[0m",
-		"\033[38;5;111m   ‘ ‘ ‘ ‘   \033[0m",
-	}
-	iconHeavyRain := []string{
-		"\033[38;5;240;1m     .-.     \033[0m",
-		"\033[38;5;240;1m    (   ).   \033[0m",
-		"\033[38;5;240;1m   (___(__)  \033[0m",
-		"\033[38;5;21;1m  ‚‘‚‘‚‘‚‘   \033[0m",
-		"\033[38;5;21;1m  ‚’‚’‚’‚’   \033[0m",
-	}
-	iconLightSnow := []string{
-		"\033[38;5;250m     .-.     \033[0m",
-		"\033[38;5;250m    (   ).   \033[0m",
-		"\033[38;5;250m   (___(__)  \033[0m",
-		"\033[38;5;255m    *  *  *  \033[0m",
-		"\033[38;5;255m   *  *  *   \033[0m",
-	}
-	iconHeavySnow := []string{
-		"\033[38;5;240;1m     .-.     \033[0m",
-		"\033[38;5;240;1m    (   ).   \033[0m",
-		"\033[38;5;240;1m   (___(__)  \033[0m",
-		"\033[38;5;255;1m   * * * *   \033[0m",
-		"\033[38;5;255;1m  * * * *    \033[0m",
-	}
-	iconLightSleet := []string{
-		"\033[38;5;250m     .-.     \033[0m",
-		"\033[38;5;250m    (   ).   \033[0m",
-		"\033[38;5;250m   (___(__)  \033[0m",
-		"\033[38;5;111m    ‘ \033[38;5;255m*\033[38;5;111m ‘ \033[38;5;255m*  \033[0m",
-		"\033[38;5;255m   *\033[38;5;111m ‘ \033[38;5;255m*\033[38;5;111m ‘   \033[0m",
-	}
-	iconFog := []string{
-		"             ",
-		"\033[38;5;251m _ - _ - _ - \033[0m",
-		"\033[38;5;251m  _ - _ - _  \033[0m",
-		"\033[38;5;251m _ - _ - _ - \033[0m",
-		"             ",
-	}
-	codes := map[int][]string{
-		113: iconSunny,
-		116: iconPartlyCloudy,
-		119: iconCloudy,
-		122: iconVeryCloudy,
-		143: iconFog,
-		176: iconLightShowers,
-		179: iconLightSleetShowers,
-		182: iconLightSleet,
-		185: iconLightSleet,
-		200: iconThunderyShowers,
-		227: iconLightSnow,
-		230: iconHeavySnow,
-		248: iconFog,
-		260: iconFog,
-		263: iconLightShowers,
-		266: iconLightRain,
-		281: iconLightSleet,
-		284: iconLightSleet,
-		293: iconLightRain,
-		296: iconLightRain,
-		299: iconHeavyShowers,
-		302: iconHeavyRain,
-		305: iconHeavyShowers,
-		308: iconHeavyRain,
-		311: iconLightSleet,
-		314: iconLightSleet,
-		317: iconLightSleet,
-		320: iconLightSnow,
-		323: iconLightSnowShowers,
-		326: iconLightSnowShowers,
-		329: iconHeavySnow,
-		332: iconHeavySnow,
-		335: iconHeavySnowShowers,
-		338: iconHeavySnow,
-		350: iconLightSleet,
-		353: iconLightShowers,
-		356: iconHeavyShowers,
-		359: iconHeavyRain,
-		362: iconLightSleetShowers,
-		365: iconLightSleetShowers,
-		368: iconLightSnowShowers,
-		371: iconHeavySnowShowers,
-		374: iconLightSleetShowers,
-		377: iconLightSleet,
-		386: iconThunderyShowers,
-		389: iconThunderyHeavyRain,
-		392: iconThunderySnowShowers,
-		395: iconHeavySnowShowers,
-	}
-	var icon []string
 
-	if i, ok := codes[cond.WeatherCode]; !ok {
-		icon = iconUnknown
-	} else {
-		icon = i
+	icon, ok := codes[cond.Code]
+	if !ok {
+		log.Fatalln("aat-frontend: The following weather code has no icon:", cond.Code)
 	}
-	desc := cond.WeatherDesc[0].Value
+
+	desc := cond.Desc
 	if !current {
 		desc = runewidth.Truncate(runewidth.FillRight(desc, 15), 15, "…")
 	}
+
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[0], icon[0], desc))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon[1], c.formatTemp(cond)))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[2], icon[2], c.formatWind(cond)))
@@ -396,36 +357,39 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 	return
 }
 
-func (c *aatConfig) printDay(w iface.Weather) (ret []string) {
-	const slotcount = 4
-	slotTimes := [slotcount]int{9 * 60, 12 * 60, 18 * 60, 22 * 60}
-	hourly := w.Hourly
+func (c *aatConfig) printDay(day iface.Day) (ret []string) {
+	desiredTimesOfDay := []time.Duration{
+		8 * time.Hour,
+		12 * time.Hour,
+		19 * time.Hour,
+		23 * time.Hour,
+	}
 	ret = make([]string, 5)
 	for i := range ret {
 		ret[i] = "│"
 	}
 
+	// save our selected elements from day.Slots in this array
+	cols := make([]iface.Cond, len(desiredTimesOfDay))
 	// find hourly data which fits the desired times of day best
-	var slots [slotcount]iface.Cond
-	for _, h := range hourly {
-		cur := int(math.Mod(float64(h.Time), 100)) + 60*(h.Time/100)
-		for i, s := range slots {
-			if math.Abs(float64(cur-slotTimes[i])) < math.Abs(float64(s.Time-slotTimes[i])) {
-				h.Time = cur
-				slots[i] = h
+	for _, candidate := range day.Slots {
+		cand := candidate.Time.UTC().Sub(candidate.Time.Truncate(24 * time.Hour))
+		for i, col := range cols {
+			cur := col.Time.Sub(col.Time.Truncate(24 * time.Hour))
+			if math.Abs(float64(cand-desiredTimesOfDay[i])) < math.Abs(float64(cur-desiredTimesOfDay[i])) {
+				cols[i] = candidate
 			}
 		}
 	}
 
-	for _, s := range slots {
+	for _, s := range cols {
 		ret = c.formatCond(ret, s, false)
 		for i := range ret {
 			ret[i] = ret[i] + "│"
 		}
 	}
 
-	d, _ := time.Parse("2006-01-02", w.Date)
-	dateFmt := "┤ " + d.Format("Mon 02. Jan") + " ├"
+	dateFmt := "┤ " + day.Date.Format("Mon 02. Jan") + " ├"
 	ret = append([]string{
 		"                                                       ┌─────────────┐                                                       ",
 		"┌──────────────────────────────┬───────────────────────" + dateFmt + "───────────────────────┬──────────────────────────────┐",
@@ -440,25 +404,22 @@ func (c *aatConfig) Setup() {
 	flag.BoolVar(&c.imperial, "aat-imperial", false, "aat frontend: use imperial units for output")
 }
 
-func (c *aatConfig) Render(r iface.Resp) {
-	fmt.Printf("Weather for %s: %s\n\n", r.Data.Req[0].Type, r.Data.Req[0].Query)
+func (c *aatConfig) Render(r iface.Data) {
+	fmt.Printf("Weather for %s\n\n", r.Location)
 	stdout := colorable.NewColorableStdout()
 
-	if r.Data.Cur == nil || len(r.Data.Cur) < 1 {
-		log.Fatal("No weather data available.")
-	}
-	out := c.formatCond(make([]string, 5), r.Data.Cur[0], true)
+	out := c.formatCond(make([]string, 5), r.Current, true)
 	for _, val := range out {
 		fmt.Fprintln(stdout, val)
 	}
 
-	if len(r.Data.Weather) == 0 {
+	if len(r.Forecast) == 0 {
 		return
 	}
-	if r.Data.Weather == nil {
+	if r.Forecast == nil {
 		log.Fatal("No detailed weather forecast available.")
 	}
-	for _, d := range r.Data.Weather {
+	for _, d := range r.Forecast {
 		for _, val := range c.printDay(d) {
 			fmt.Fprintln(stdout, val)
 		}
