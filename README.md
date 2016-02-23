@@ -52,10 +52,9 @@ file location.
 
 ##Todo
 
-* store values affected by metric/imperial conversion as float32 internally
-* implement SI units
-* use objx instead of custom marshall function to localize the output (and
-  handle the whole json response in general)
+* more backends and frontends
+* resolve ALL the [issues](https://github.com/schachmat/wego/issues)
+* don't forget the [TODOs in the code](https://github.com/schachmat/wego/search?q=TODO&type=Code)
 
 ##License - ISC
 
