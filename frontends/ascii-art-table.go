@@ -46,48 +46,24 @@ func (c *aatConfig) formatTemp(cond iface.Cond) string {
 		true:  "F",
 	}
 	color := func(temp float32) string {
-		col := 196
-		if temp < -15 {
-			col = 21
-		} else if temp < -12 {
-			col = 27
-		} else if temp < -9 {
-			col = 33
-		} else if temp < -6 {
-			col = 39
-		} else if temp < -3 {
-			col = 45
-		} else if temp < 0 {
-			col = 51
-		} else if temp < 2 {
-			col = 50
-		} else if temp < 4 {
-			col = 49
-		} else if temp < 6 {
-			col = 48
-		} else if temp < 8 {
-			col = 47
-		} else if temp < 10 {
-			col = 46
-		} else if temp < 13 {
-			col = 82
-		} else if temp < 16 {
-			col = 118
-		} else if temp < 19 {
-			col = 154
-		} else if temp < 22 {
-			col = 190
-		} else if temp < 25 {
-			col = 226
-		} else if temp < 28 {
-			col = 220
-		} else if temp < 31 {
-			col = 214
-		} else if temp < 34 {
-			col = 208
-		} else if temp < 37 {
-			col = 202
+		colmap := []struct {
+			maxtemp float32
+			color   int
+		}{
+			{-15, 21}, {-12, 27}, {-9, 33}, {-6, 39}, {-3, 45},
+			{0, 51}, {2, 50}, {4, 49}, {6, 48}, {8, 47},
+			{10, 46}, {13, 82}, {16, 118}, {19, 154}, {22, 190},
+			{25, 226}, {28, 220}, {31, 214}, {34, 208}, {37, 202},
 		}
+
+		col := 196
+		for _, candidate := range colmap {
+			if temp < candidate.maxtemp {
+				col = candidate.color
+				break
+			}
+		}
+
 		if c.imperial {
 			temp = (temp*18 + 320) / 10
 		}
@@ -123,28 +99,22 @@ func (c *aatConfig) formatWind(cond iface.Cond) string {
 		return "\033[1m" + arrows[((*deg+22)%360)/45] + "\033[0m"
 	}
 	color := func(spdKmph float32) string {
-		col := 196
-		if spdKmph <= 0 {
-			col = 46
-		} else if spdKmph < 4 {
-			col = 82
-		} else if spdKmph < 7 {
-			col = 118
-		} else if spdKmph < 10 {
-			col = 154
-		} else if spdKmph < 13 {
-			col = 190
-		} else if spdKmph < 16 {
-			col = 226
-		} else if spdKmph < 20 {
-			col = 220
-		} else if spdKmph < 24 {
-			col = 214
-		} else if spdKmph < 28 {
-			col = 208
-		} else if spdKmph < 32 {
-			col = 202
+		colmap := []struct {
+			maxtemp float32
+			color   int
+		}{
+			{0, 46}, {4, 82}, {7, 118}, {10, 154}, {13, 190},
+			{16, 226}, {20, 220}, {24, 214}, {28, 208}, {32, 202},
 		}
+
+		col := 196
+		for _, candidate := range colmap {
+			if spdKmph < candidate.maxtemp {
+				col = candidate.color
+				break
+			}
+		}
+
 		if c.imperial {
 			spdKmph = (spdKmph * 1000) / 1609
 		}
