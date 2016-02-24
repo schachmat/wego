@@ -28,10 +28,10 @@ func aatPad(s string, mustLen int) (ret string) {
 	} else if delta < 0 {
 		toks := ansiEsc.Split(s, 2)
 		tokLen := runewidth.StringWidth(toks[0])
-		esc := ansiEsc.FindString(s)
 		if tokLen > mustLen {
 			ret = fmt.Sprintf("%.*s\033[0m", mustLen, toks[0])
 		} else {
+			esc := ansiEsc.FindString(s)
 			ret = fmt.Sprintf("%s%s%s", toks[0], esc, aatPad(toks[1], mustLen-tokLen))
 		}
 	}
@@ -151,7 +151,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"    .-.      ",
 			"     __)     ",
 			"    (        ",
-			"     `-’     ",
+			"     `-´     ",
 			"      •      ",
 		},
 		iface.CodeCloudy: {
@@ -249,7 +249,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m    \\   /    \033[0m",
 			"\033[38;5;226m     .-.     \033[0m",
 			"\033[38;5;226m  ― (   ) ―  \033[0m",
-			"\033[38;5;226m     `-’     \033[0m",
+			"\033[38;5;226m     `-´     \033[0m",
 			"\033[38;5;226m    /   \\    \033[0m",
 		},
 		iface.CodeThunderyHeavyRain: {
