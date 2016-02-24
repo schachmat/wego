@@ -40,9 +40,9 @@ go get -u github.com/schachmat/wego
    here](https://developer.worldweatheronline.com/auth/register) with your
    github.com or facebook account. Your github.com account needs a public email
    address, but you can choose a bogus one.
-0. Copy your API key into the `.wegorc` file in your `$HOME` folder, change the
-   city to your preference, and choose if you want to use metric or imperial
-   units. Save the file.
+0. Copy your API key into the `.wegorc` file in your `$HOME` folder (it will be
+   hidden in some file managers), change the city to your preference, and choose
+   if you want to use metric or imperial units. Save the file.
 0. Run `wego` once again and you should get the weather forecast for the current
    and next 2 days.
 0. If you're visiting someone in e.g. London over the weekend, just run `wego 4
