@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
@@ -22,13 +21,13 @@ type aatConfig struct {
 func aatPad(s string, mustLen int) (ret string) {
 	ansiEsc := regexp.MustCompile("\033.*?m")
 	ret = s
-	realLen := utf8.RuneCountInString(ansiEsc.ReplaceAllLiteralString(s, ""))
+	realLen := runewidth.StringWidth(ansiEsc.ReplaceAllLiteralString(s, ""))
 	delta := mustLen - realLen
 	if delta > 0 {
 		ret += "\033[0m" + strings.Repeat(" ", delta)
 	} else if delta < 0 {
 		toks := ansiEsc.Split(s, 2)
-		tokLen := utf8.RuneCountInString(toks[0])
+		tokLen := runewidth.StringWidth(toks[0])
 		esc := ansiEsc.FindString(s)
 		if tokLen > mustLen {
 			ret = fmt.Sprintf("%.*s\033[0m", mustLen, toks[0])
