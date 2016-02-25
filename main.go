@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"os"
-	"os/user"
-	"path"
 	"strconv"
 
 	"github.com/schachmat/ingo"
@@ -15,15 +12,6 @@ import (
 )
 
 func main() {
-	configpath := os.Getenv("WEGORC")
-	if configpath == "" {
-		usr, err := user.Current()
-		if err != nil {
-			log.Fatalf("%v\nYou can set the environment variable WEGORC to point to your config file as a workaround.", err)
-		}
-		configpath = path.Join(usr.HomeDir, ".wegorc")
-	}
-
 	// initialize backends and frontends (flags and default config)
 	for _, be := range iface.AllBackends {
 		be.Setup()
@@ -40,7 +28,9 @@ func main() {
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 
 	// read/write config and parse flags
-	ingo.Parse(configpath)
+	if err := ingo.Parse("wego"); err != nil {
+		log.Fatalf("Error parsing config: %v", err)
+	}
 
 	// non-flag shortcut arguments overwrite possible flag arguments
 	for _, arg := range flag.Args() {
