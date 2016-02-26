@@ -22,7 +22,9 @@
   [1.5](https://golang.org/doc/go1.5) environment (You can use
   [goenv](https://github.com/pwoolcoc/goenv) if your distribution does not
   support Go 1.5 yet)
-* utf-8 terminal with 256 colors (I use the dejavu font)
+* utf-8 terminal with 256 colors
+* A sane monospaced font containing all the required runes (I use `dejavu sans
+  mono`)
 * A worldweatheronline.com API key (see Setup below)
 
 ##Installation
