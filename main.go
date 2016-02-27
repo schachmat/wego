@@ -22,7 +22,9 @@ func main() {
 
 	// initialize global flags and default config
 	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
-	location := flag.String("city", "New York", "`LOCATION` to be queried")
+	numLocations := flag.Int("locations", 1, "`NUMBER` of locations of weather forecast to be displayed")
+	location1 := flag.String("city1", "New York", "`LOCATION1` to be queried")
+	location2 := flag.String("city2", "New York", "`LOCATION2` to be queried")
 	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si")
 	selectedBackend := flag.String("backend", "worldweatheronline.com", "`BACKEND` to be used")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
@@ -36,8 +38,10 @@ func main() {
 	for _, arg := range flag.Args() {
 		if v, err := strconv.Atoi(arg); err == nil && len(arg) == 1 {
 			*numdays = v
+			*numLocations = v
 		} else {
-			*location = arg
+			*location1 = arg
+			*location2 = arg
 		}
 	}
 
@@ -46,7 +50,6 @@ func main() {
 	if !ok {
 		log.Fatalf("Could not find selected backend \"%s\"", *selectedBackend)
 	}
-	r := be.Fetch(*location, *numdays)
 
 	// set unit system
 	unit := iface.UnitsMetric
@@ -61,5 +64,10 @@ func main() {
 	if !ok {
 		log.Fatalf("Could not find selected frontend \"%s\"", *selectedFrontend)
 	}
-	fe.Render(r, unit)
+
+	cities := []*string{location1, location2}
+	for i := 0; i < *numLocations; i++ {
+		r := be.Fetch(*cities[i], *numdays)
+		fe.Render(r, unit)
+	}
 }
