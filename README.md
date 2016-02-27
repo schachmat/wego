@@ -11,6 +11,7 @@
   * windspeed and direction
   * viewing distance
   * precipitation amount and probability
+  * multiple cities
 * ssl, so the NSA has a harder time learning where you live or plan to go
 * multi language support
 * config file for default location which can be overridden by commandline
