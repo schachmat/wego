@@ -5,8 +5,10 @@ import (
 	_ "crypto/sha512"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -56,9 +58,19 @@ type wwoResponse struct {
 	} `json:"data"`
 }
 
+type wwoCoordinateResp struct {
+	Search struct {
+		Result []struct {
+			Longitude string `json:"longitude"`
+			Latitude  string `json:"latitude"`
+		} `json:"result"`
+	} `json:"search_api"`
+}
+
 type wwoConfig struct {
 	wwoApiKey   string
 	wwoLanguage string
+	coordinates bool
 }
 
 const (
@@ -242,12 +254,63 @@ func wwoUnmarshalLang(body []byte, r *wwoResponse, lang string) error {
 func (c *wwoConfig) Setup() {
 	flag.StringVar(&c.wwoApiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
 	flag.StringVar(&c.wwoLanguage, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
+	flag.BoolVar(&c.coordinates, "coords", false, "Print out geo coordinates of the city")
+}
+
+func getCoordinatesFromAPI(queryParams []string, c chan string) {
+	var coordResp wwoCoordinateResp
+	res, err := http.Get(wwoSuri + strings.Join(queryParams, "&"))
+	if err != nil {
+		c <- ""
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		c <- ""
+	}
+
+	if err = json.Unmarshal(body, &coordResp); err != nil {
+		log.Println(err)
+		c <- ""
+	}
+
+	c <- formatCoordinates(coordResp.Search.Result[0].Latitude,
+		coordResp.Search.Result[0].Longitude)
+}
+
+func formatCoordinates(latitude, longitude string) (formatted string) {
+	var formattedLon, formattedLat string
+	lat, err := strconv.ParseFloat(latitude, 64)
+	if err != nil {
+		return ""
+	} else {
+		formattedLat += fmt.Sprintf("%v°", int(math.Abs(lat)))
+		if lat > 0 {
+			formattedLat += " North"
+		} else if lat < 0 {
+			formattedLat += " South"
+		}
+	}
+
+	lon, err := strconv.ParseFloat(longitude, 64)
+	if err != nil {
+		return ""
+	} else {
+		formattedLon += fmt.Sprintf("%v°", int(math.Abs(lon)))
+		if lon > 0 {
+			formattedLon += " East"
+		} else if lon < 0 {
+			formattedLon += " West"
+		}
+	}
+	return fmt.Sprintf(" (%s, %s)", formattedLat, formattedLon)
 }
 
 func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	var params []string
 	var resp wwoResponse
 	var ret iface.Data
+	coordChan := make(chan string)
 
 	if len(c.wwoApiKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
@@ -260,6 +323,11 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	params = append(params, "format=json")
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
+
+	if c.coordinates {
+		go getCoordinatesFromAPI(params, coordChan)
+	}
+
 	if c.wwoLanguage != "" {
 		params = append(params, "lang="+c.wwoLanguage)
 	}
@@ -292,6 +360,9 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	}
 
 	ret.Location = resp.Data.Req[0].Type + ": " + resp.Data.Req[0].Query
+	if c.coordinates {
+		ret.Location += <-coordChan
+	}
 
 	if resp.Data.CurCond != nil && len(resp.Data.CurCond) > 0 {
 		ret.Current = wwoParseCond(resp.Data.CurCond[0], time.Now())
