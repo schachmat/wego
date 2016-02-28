@@ -1,6 +1,7 @@
 package frontends
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -14,7 +15,8 @@ import (
 )
 
 type aatConfig struct {
-	unit iface.UnitSystem
+	coords bool
+	unit   iface.UnitSystem
 }
 
 //TODO: replace s parameter with printf interface?
@@ -300,6 +302,24 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 	return
 }
 
+func (c *aatConfig) formatGeo(coords *iface.LatLon) (ret string) {
+	if !c.coords || coords == nil {
+		return ""
+	}
+
+	lat, lon := "N", "E"
+	if coords.Latitude < 0 {
+		lat = "S"
+	}
+	if coords.Longitude < 0 {
+		lon = "W"
+	}
+	ret = " "
+	ret += fmt.Sprintf("(%.1f°%s", math.Abs(float64(coords.Latitude)), lat)
+	ret += fmt.Sprintf(" %.1f°%s)", math.Abs(float64(coords.Longitude)), lon)
+	return
+}
+
 func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 	desiredTimesOfDay := []time.Duration{
 		8 * time.Hour,
@@ -344,12 +364,13 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 }
 
 func (c *aatConfig) Setup() {
+	flag.BoolVar(&c.coords, "aat-coords", false, "Show geo coordinates")
 }
 
 func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 	c.unit = unitSystem
 
-	fmt.Printf("Weather for %s\n\n", r.Location)
+	fmt.Printf("Weather for %s%s\n\n", r.Location, c.formatGeo(r.GeoLoc))
 	stdout := colorable.NewColorableStdout()
 
 	out := c.formatCond(make([]string, 5), r.Current, true)

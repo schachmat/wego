@@ -1,8 +1,8 @@
 package iface
 
 import (
-	"time"
 	"log"
+	"time"
 )
 
 type WeatherCode int
@@ -98,10 +98,16 @@ type Day struct {
 	Astronomy Astro
 }
 
+type LatLon struct {
+	Latitude  float32
+	Longitude float32
+}
+
 type Data struct {
 	Current  Cond
 	Forecast []Day
 	Location string
+	GeoLoc   *LatLon
 }
 
 type UnitSystem int
@@ -128,9 +134,9 @@ func (u UnitSystem) Speed(spdKmph float32) (res float32, unit string) {
 	if u == UnitsMetric {
 		return spdKmph, "km/h"
 	} else if u == UnitsImperial {
-		return spdKmph/1.609, "mph"
+		return spdKmph / 1.609, "mph"
 	} else if u == UnitsSi {
-		return spdKmph/3.6, "m/s"
+		return spdKmph / 3.6, "m/s"
 	}
 	log.Fatalln("Unknown unit system:", u)
 	return
@@ -139,17 +145,17 @@ func (u UnitSystem) Speed(spdKmph float32) (res float32, unit string) {
 func (u UnitSystem) Distance(distM float32) (res float32, unit string) {
 	if u == UnitsMetric || u == UnitsSi {
 		if distM < 1 {
-			return distM*1000, "mm"
+			return distM * 1000, "mm"
 		} else if distM < 1000 {
 			return distM, "m"
 		} else {
-			return distM/1000, "km"
+			return distM / 1000, "km"
 		}
 	} else if u == UnitsImperial {
 		res, unit = distM/0.0254, "in"
-		if res < 3 * 12 { // 1yd = 3ft, 1ft = 12in
+		if res < 3*12 { // 1yd = 3ft, 1ft = 12in
 			return
-		} else if res < 8 * 10 * 22 * 36 { //1mi = 8fur, 1fur = 10ch, 1ch = 22yd
+		} else if res < 8*10*22*36 { //1mi = 8fur, 1fur = 10ch, 1ch = 22yd
 			return res / 36, "yd"
 		} else {
 			return res / 8 / 10 / 22 / 36, "mi"

@@ -56,6 +56,15 @@ type wwoResponse struct {
 	} `json:"data"`
 }
 
+type wwoCoordinateResp struct {
+	Search struct {
+		Result []struct {
+			Longitude *float32 `json:"longitude,string"`
+			Latitude  *float32 `json:"latitude,string"`
+		} `json:"result"`
+	} `json:"search_api"`
+}
+
 type wwoConfig struct {
 	wwoApiKey   string
 	wwoLanguage string
@@ -244,10 +253,40 @@ func (c *wwoConfig) Setup() {
 	flag.StringVar(&c.wwoLanguage, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
 }
 
+func getCoordinatesFromAPI(queryParams []string, c chan *iface.LatLon) {
+	var coordResp wwoCoordinateResp
+	res, err := http.Get(wwoSuri + strings.Join(queryParams, "&"))
+	if err != nil {
+		log.Println("Unable to fetch geo location:", err)
+		c <- nil
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println("Unable to read geo location data:", err)
+		c <- nil
+	}
+
+	if err = json.Unmarshal(body, &coordResp); err != nil {
+		log.Println("Unable to unmarshal geo location data:", err)
+		c <- nil
+	}
+
+	r := coordResp.Search.Result
+	if len(r) < 1 || r[0].Latitude == nil || r[0].Longitude == nil {
+		log.Println("Malformed geo location response")
+		c <- nil
+	}
+
+	c <- &iface.LatLon{Latitude: *r[0].Latitude, Longitude: *r[0].Longitude}
+}
+
 func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	var params []string
 	var resp wwoResponse
 	var ret iface.Data
+	coordChan := make(chan *iface.LatLon)
 
 	if len(c.wwoApiKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
@@ -260,6 +299,9 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	params = append(params, "format=json")
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
+
+	go getCoordinatesFromAPI(params, coordChan)
+
 	if c.wwoLanguage != "" {
 		params = append(params, "lang="+c.wwoLanguage)
 	}
@@ -292,6 +334,7 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	}
 
 	ret.Location = resp.Data.Req[0].Type + ": " + resp.Data.Req[0].Query
+	ret.GeoLoc = <-coordChan
 
 	if resp.Data.CurCond != nil && len(resp.Data.CurCond) > 0 {
 		ret.Current = wwoParseCond(resp.Data.CurCond[0], time.Now())
