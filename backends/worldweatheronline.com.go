@@ -66,8 +66,8 @@ type wwoCoordinateResp struct {
 }
 
 type wwoConfig struct {
-	wwoApiKey   string
-	wwoLanguage string
+	apiKey   string
+	language string
 }
 
 const (
@@ -249,8 +249,8 @@ func wwoUnmarshalLang(body []byte, r *wwoResponse, lang string) error {
 }
 
 func (c *wwoConfig) Setup() {
-	flag.StringVar(&c.wwoApiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
-	flag.StringVar(&c.wwoLanguage, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
+	flag.StringVar(&c.apiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
+	flag.StringVar(&c.language, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
 }
 
 func getCoordinatesFromAPI(queryParams []string, c chan *iface.LatLon) {
@@ -288,10 +288,10 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	var ret iface.Data
 	coordChan := make(chan *iface.LatLon)
 
-	if len(c.wwoApiKey) == 0 {
+	if len(c.apiKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
 	}
-	params = append(params, "key="+c.wwoApiKey)
+	params = append(params, "key="+c.apiKey)
 
 	if len(loc) > 0 {
 		params = append(params, "q="+url.QueryEscape(loc))
@@ -302,8 +302,8 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 
 	go getCoordinatesFromAPI(params, coordChan)
 
-	if c.wwoLanguage != "" {
-		params = append(params, "lang="+c.wwoLanguage)
+	if c.language != "" {
+		params = append(params, "lang="+c.language)
 	}
 
 	res, err := http.Get(wwoWuri + strings.Join(params, "&"))
@@ -316,12 +316,12 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 		log.Fatal(err)
 	}
 
-	if c.wwoLanguage == "" {
+	if c.language == "" {
 		if err = json.Unmarshal(body, &resp); err != nil {
 			log.Println(err)
 		}
 	} else {
-		if err = wwoUnmarshalLang(body, &resp, c.wwoLanguage); err != nil {
+		if err = wwoUnmarshalLang(body, &resp, c.language); err != nil {
 			log.Println(err)
 		}
 	}
