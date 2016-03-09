@@ -68,6 +68,7 @@ type wwoCoordinateResp struct {
 type wwoConfig struct {
 	apiKey   string
 	language string
+	debug    bool
 }
 
 const (
@@ -251,35 +252,45 @@ func wwoUnmarshalLang(body []byte, r *wwoResponse, lang string) error {
 func (c *wwoConfig) Setup() {
 	flag.StringVar(&c.apiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
 	flag.StringVar(&c.language, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
+	flag.BoolVar(&c.debug, "wwo-debug", false, "wwo backend: print raw requests and responses")
 }
 
-func getCoordinatesFromAPI(queryParams []string, c chan *iface.LatLon) {
+func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.LatLon) {
 	var coordResp wwoCoordinateResp
-	res, err := http.Get(wwoSuri + strings.Join(queryParams, "&"))
+	requri := wwoSuri + strings.Join(queryParams, "&")
+	hres, err := http.Get(requri)
 	if err != nil {
 		log.Println("Unable to fetch geo location:", err)
-		c <- nil
+		res <- nil
+	} else if hres.StatusCode != 200 {
+		log.Println("Unable to fetch geo location: http status", hres.StatusCode)
+		res <- nil
 	}
-	defer res.Body.Close()
+	defer hres.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(hres.Body)
 	if err != nil {
 		log.Println("Unable to read geo location data:", err)
-		c <- nil
+		res <- nil
+	}
+
+	if c.debug {
+		log.Println("Geo location request:", requri)
+		log.Printf("Geo location response: %s\n", body)
 	}
 
 	if err = json.Unmarshal(body, &coordResp); err != nil {
 		log.Println("Unable to unmarshal geo location data:", err)
-		c <- nil
+		res <- nil
 	}
 
 	r := coordResp.Search.Result
 	if len(r) < 1 || r[0].Latitude == nil || r[0].Longitude == nil {
 		log.Println("Malformed geo location response")
-		c <- nil
+		res <- nil
 	}
 
-	c <- &iface.LatLon{Latitude: *r[0].Latitude, Longitude: *r[0].Longitude}
+	res <- &iface.LatLon{Latitude: *r[0].Latitude, Longitude: *r[0].Longitude}
 }
 
 func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
@@ -300,20 +311,29 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	params = append(params, "num_of_days="+strconv.Itoa(numdays))
 	params = append(params, "tp=3")
 
-	go getCoordinatesFromAPI(params, coordChan)
+	go c.getCoordinatesFromAPI(params, coordChan)
 
 	if c.language != "" {
 		params = append(params, "lang="+c.language)
 	}
+	requri := wwoWuri + strings.Join(params, "&")
 
-	res, err := http.Get(wwoWuri + strings.Join(params, "&"))
+	res, err := http.Get(requri)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Unable to get weather data: ", err)
+	} else if res.StatusCode != 200 {
+		log.Fatal("Unable to get weather data: http status ", res.StatusCode)
 	}
 	defer res.Body.Close()
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if c.debug {
+		log.Println("Weather request:", requri)
+		log.Printf("Weather response: %s\n", body)
 	}
 
 	if c.language == "" {
