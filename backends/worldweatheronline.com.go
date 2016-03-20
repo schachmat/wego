@@ -5,6 +5,7 @@ import (
 	_ "crypto/sha512"
 	"encoding/json"
 	"flag"
+	"net/http/httputil"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -316,9 +317,33 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	if c.language != "" {
 		params = append(params, "lang="+c.language)
 	}
-	requri := wwoWuri + strings.Join(params, "&")
 
-	res, err := http.Get(requri)
+	reqUri := wwoWuri + strings.Join(params, "&")
+
+	req, err := http.NewRequest("GET", reqUri, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if c.debug {
+		dump, err := httputil.DumpRequestOut(req, true)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Weather request: %q", dump)
+	}
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+
+	if c.debug {
+		dump, err := httputil.DumpResponse(res, true)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Weather response: %q", dump)
+	}
+
 	if err != nil {
 		log.Fatal("Unable to get weather data: ", err)
 	} else if res.StatusCode != 200 {
@@ -329,11 +354,6 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	if c.debug {
-		log.Println("Weather request:", requri)
-		log.Printf("Weather response: %s\n", body)
 	}
 
 	if c.language == "" {
