@@ -276,7 +276,7 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 
 	if c.debug {
 		log.Println("Geo location request:", requri)
-		log.Printf("Geo location response: %s\n", body)
+		log.Println("Geo location response:", string(body))
 	}
 
 	if err = json.Unmarshal(body, &coordResp); err != nil {
@@ -333,7 +333,7 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 
 	if c.debug {
 		log.Println("Weather request:", requri)
-		log.Printf("Weather response: %s\n", body)
+		log.Println("Weather response:", string(body))
 	}
 
 	if c.language == "" {
