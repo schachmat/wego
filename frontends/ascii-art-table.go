@@ -340,7 +340,7 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 		cand := candidate.Time.UTC().Sub(candidate.Time.Truncate(24 * time.Hour))
 		for i, col := range cols {
 			cur := col.Time.Sub(col.Time.Truncate(24 * time.Hour))
-			if math.Abs(float64(cand-desiredTimesOfDay[i])) < math.Abs(float64(cur-desiredTimesOfDay[i])) {
+			if col.Time.IsZero() || math.Abs(float64(cand-desiredTimesOfDay[i])) < math.Abs(float64(cur-desiredTimesOfDay[i])) {
 				cols[i] = candidate
 			}
 		}
