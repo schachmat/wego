@@ -157,7 +157,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
 
 	if len(c.apiKey) == 0 {
-		log.Fatal("No forecast.io API key specified.")
+		log.Fatal("No forecast.io API key specified. You have to register for one at https://developer.forecast.io/register")
 	}
 	requri := fmt.Sprintf(forecastWuri, c.apiKey, location, c.language)
 
