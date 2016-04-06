@@ -52,13 +52,14 @@ type Cond struct {
 	// range [0, 100].
 	ChanceOfRainPercent *int
 
-	// PrecipM is the precipitation amount in meters(!). It must be >= 0.
+	// PrecipM is the precipitation amount in meters(!) per hour. Must be >= 0.
 	PrecipM *float32
 
 	// VisibleDistM is the visibility range in meters(!). It must be >= 0.
 	VisibleDistM *float32
 
-	// WindspeedKmph is the average wind speed in kilometers per second.
+	// WindspeedKmph is the average wind speed in kilometers per hour. The value
+	// must be >= 0.
 	WindspeedKmph *float32
 
 	// WindGustKmph is the maximum temporary wind speed in kilometers per
