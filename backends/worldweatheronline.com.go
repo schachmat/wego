@@ -145,8 +145,8 @@ func wwoParseCond(cond wwoCond, date time.Time) (ret iface.Cond) {
 	ret.FeelsLikeC = cond.FeelsLikeC
 
 	if cond.PrecipMM != nil {
-		ret.PrecipM = new(float32)
-		*ret.PrecipM = *cond.PrecipMM / 1000
+		var p float32 = *cond.PrecipMM / 1000
+		ret.PrecipM = &p
 	}
 
 	ret.Time = date
@@ -157,13 +157,13 @@ func wwoParseCond(cond wwoCond, date time.Time) (ret iface.Cond) {
 	}
 
 	if cond.VisibleDistKM != nil {
-		ret.VisibleDistM = new(float32)
-		*ret.VisibleDistM = *cond.VisibleDistKM * 1000
+		var p float32 = *cond.VisibleDistKM * 1000
+		ret.VisibleDistM = &p
 	}
 
 	if cond.WinddirDegree != nil && *cond.WinddirDegree >= 0 {
-		ret.WinddirDegree = new(int)
-		*ret.WinddirDegree = *cond.WinddirDegree % 360
+		var p int = *cond.WinddirDegree % 360
+		ret.WinddirDegree = &p
 	}
 
 	ret.WindspeedKmph = cond.WindspeedKmph
