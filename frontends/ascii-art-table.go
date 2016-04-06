@@ -137,6 +137,7 @@ func (c *aatConfig) formatVisibility(cond iface.Cond) string {
 func (c *aatConfig) formatRain(cond iface.Cond) string {
 	if cond.PrecipM != nil {
 		v, u := c.unit.Distance(*cond.PrecipM)
+		u += "/h" // it's the same in all unit systems
 		if cond.ChanceOfRainPercent != nil {
 			return aatPad(fmt.Sprintf("%.1f %s | %d%%", v, u, *cond.ChanceOfRainPercent), 15)
 		}
