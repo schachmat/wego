@@ -7,17 +7,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/schachmat/wego/iface"
 )
 
 type forecastConfig struct {
-	apiKey    string
-	latitude  string
-	longitude string
-	debug     bool
+	apiKey   string
+	language string
+	debug    bool
 }
 
 type forecastDataPoint struct {
@@ -57,93 +55,41 @@ const (
 	// see https://developer.forecast.io/docs/v2
 	// see also https://github.com/mlbright/forecast
 	//https://api.forecast.io/forecast/APIKEY/LATITUDE,LONGITUDE
-	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=de&exclude=minutely,daily,alerts,flags&extend=hourly"
+	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,daily,alerts,flags&extend=hourly"
 )
 
-func (dp forecastDataPoint) Render() {
-	var b []byte
-	var err error
-	b, err = json.MarshalIndent(dp, "", "\t")
-	if err != nil {
-		log.Fatal(err)
-	}
-	os.Stdout.Write(b)
-}
-
-func (db *forecastDataBlock) Convert(c *forecastConfig) []iface.Day {
+func forecastParseDaily(db forecastDataBlock, numdays int) []iface.Day {
 	var forecast []iface.Day
-
 	var day *iface.Day
-	day = new(iface.Day)
 
-	for cnt, dp := range db.Data {
-		slot := forecastParseCond(&dp)
-		if slot == nil {
+	//TODO: fill current day forecast with time machine call
+
+	for _, dp := range db.Data {
+		slot, err := forecastParseCond(dp)
+		if err != nil {
+			log.Println("Error parsing hourly weather condition:", err)
 			continue
 		}
 
-		//skip today
-		// if *slot.Time.Day() == time.Now().Day() {
-		// 	continue
-		// }
-
-		// dp.Render()
-
-		if c.debug {
-			log.Printf("DataPoint: %02d\t%v\n", cnt, slot.Time)
-		}
-
-		if day == nil || day.Date.Day() != slot.Time.Day() {
-			//is day already set?
-			if len(day.Slots) >= 1 {
-				if dp.TemperatureMax != nil && *dp.TemperatureMax >= 0 {
-					day.MaxtempC = new(float32)
-					*day.MaxtempC = *dp.TemperatureMax
-				}
-
-				if dp.TemperatureMax != nil && *dp.TemperatureMax >= 0 {
-					day.MintempC = new(float32)
-					*day.MintempC = *dp.TemperatureMin
-				}
-
-				forecast = append(forecast, *day)
-
-				if c.debug {
-					log.Printf("New Day: %02d\t%v\n", cnt, day)
-					for i, cond := range day.Slots {
-						log.Printf("New Day Slot: %02d\t%v\n", i, cond)
-					}
-				}
+		if day != nil && day.Date.Day() != slot.Time.Day() {
+			if len(forecast) >= numdays-1 {
+				break
 			}
-
+			forecast = append(forecast, *day)
+			day = nil
+		}
+		if day == nil {
 			day = new(iface.Day)
 			day.Date = slot.Time
-			day.Slots = []iface.Cond{*slot}
-			// only add relevant Slots
-		} else {
-			if slot.Time.Hour() == 8 ||
-				slot.Time.Hour() == 12 ||
-				slot.Time.Hour() == 19 ||
-				slot.Time.Hour() == 23 {
-				day.Date = slot.Time
-				day.Slots = append(day.Slots, *slot)
-
-				if c.debug {
-					// log.Printf("Adding Slot: %02d\t>%p<\t>%v<\t>%v<\n",
-					// len(day.Slots), slot, *slot.Time, day)
-				}
-			} else if false {
-				day.Date = slot.Time
-				day.Slots = append(day.Slots, *slot)
-			}
+			//TODO: min-,max-temperature, astronomy
 		}
-	}
-	forecast = append(forecast, *day)
 
-	return forecast
+		day.Slots = append(day.Slots, slot)
+	}
+	return append(forecast, *day)
 }
 
-func forecastParseCond(dp *forecastDataPoint) (ret *iface.Cond) {
+func forecastParseCond(dp forecastDataPoint) (ret iface.Cond, err error) {
 	codemap := map[string]iface.WeatherCode{
 		"clear-day":           iface.CodeSunny,
 		"clear-night":         iface.CodeSunny,
@@ -158,10 +104,8 @@ func forecastParseCond(dp *forecastDataPoint) (ret *iface.Cond) {
 		"thunderstorm":        iface.CodeThunderyShowers,
 	}
 
-	ret = &iface.Cond{}
-
 	if dp.Time == nil {
-		return nil
+		return iface.Cond{}, fmt.Errorf("The forecast.io response did not provide a time for the weather condition")
 	}
 	ret.Time = time.Unix(int64(*dp.Time), 0)
 
@@ -200,11 +144,12 @@ func forecastParseCond(dp *forecastDataPoint) (ret *iface.Cond) {
 		ret.WinddirDegree = &p
 	}
 
-	return
+	return ret, nil
 }
 
 func (c *forecastConfig) Setup() {
 	flag.StringVar(&c.apiKey, "forecast-api-key", "", "forecast backend: the api `KEY` to use")
+	flag.StringVar(&c.language, "forecast-lang", "en", "forecast backend: the `LANGUAGE` to request from forecast.io")
 	flag.BoolVar(&c.debug, "forecast-debug", false, "forecast backend: print raw requests and responses")
 }
 
@@ -214,10 +159,10 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	if len(c.apiKey) == 0 {
 		log.Fatal("No forecast.io API key specified.")
 	}
-	requri := fmt.Sprintf(forecastWuri, c.apiKey, location)
+	requri := fmt.Sprintf(forecastWuri, c.apiKey, location, c.language)
 
 	if c.debug {
-		log.Printf("Weather service: %s\n", requri)
+		log.Println("Weather request:", requri)
 	}
 
 	res, err := http.Get(requri)
@@ -234,8 +179,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	}
 
 	if c.debug {
-		log.Println("Weather request:", requri)
-		//log.Printf("Weather response: %s\n", body)
+		log.Println("Weather response:", string(body))
 	}
 
 	var resp forecastResponse
@@ -243,18 +187,16 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 		log.Println(err)
 	}
 
-	//log.Printf("Weather response: %v\n", resp)
-
-	//log.Printf("Weather response: %v\n", resp.Currently)
-
 	ret.Location = fmt.Sprintf("%f:%f", *resp.Latitude, *resp.Longitude)
 	var reqLatLon iface.LatLon
 	reqLatLon.Latitude = *resp.Latitude
 	reqLatLon.Longitude = *resp.Longitude
 	ret.GeoLoc = &reqLatLon
 
-	ret.Current = *forecastParseCond(&resp.Currently)
-	ret.Forecast = resp.Hourly.Convert(c)
+	if ret.Current, err = forecastParseCond(resp.Currently); err != nil {
+		log.Fatalf("Could not parse current weather condition: %v", err)
+	}
+	ret.Forecast = forecastParseDaily(resp.Hourly, numdays)
 
 	return ret
 }
