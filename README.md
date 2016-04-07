@@ -38,10 +38,13 @@ go get -u github.com/schachmat/wego
 
 0. Run `wego` once. You will get an error message, but the config file will be
    generated for you as well.
-0. If you don't have the necessary API key yet, you can [register
+0. ~~If you don't have the necessary API key yet, you can [register
    here](https://developer.worldweatheronline.com/auth/register) with your
    github.com or facebook account. Your github.com account needs a public email
-   address, but you can choose a bogus one.
+   address, but you can choose a bogus one.~~ Worldweatheronline no longer gives
+   out free API keys. If you don't already have one, you have to use the new
+   forecast.io backend which will replace worldweatheronline as the default
+   soon. See #83 for more information on how to test it.
 0. Copy your API key into the `.wegorc` file in your `$HOME` folder (it will be
    hidden in some file managers), change the city to your preference, and choose
    if you want to use metric or imperial units. Save the file.
