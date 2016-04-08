@@ -36,19 +36,26 @@ go get -u github.com/schachmat/wego
 
 ##Setup
 
-0. Run `wego` once. You will get an error message, but the config file will be
-   generated for you as well.
-0. ~~If you don't have the necessary API key yet, you can [register
-   here](https://developer.worldweatheronline.com/auth/register) with your
-   github.com or facebook account. Your github.com account needs a public email
-   address, but you can choose a bogus one.~~ Worldweatheronline no longer gives
-   out free API keys. If you don't already have one, you have to use the new
-   forecast.io backend which will replace worldweatheronline as the default
-   soon. See [#83](https://github.com/schachmat/wego/issues/83) for more
-   information on how to test it.
-0. Copy your API key into the `.wegorc` file in your `$HOME` folder (it will be
-   hidden in some file managers), change the city to your preference, and choose
-   if you want to use metric or imperial units. Save the file.
+0. Run `wego` once. You will get an error message, but the `.wegorc` config
+   file will be generated in your `$HOME` folder (it will be hidden in some
+   file managers).
+0. __With a [forecast.io](http://forecast.io/) account__ (new default)
+    * Create your account on https://developer.forecast.io/
+    * Your `.wegorc` file should have followings values :
+    ```
+      backend=forecast.io
+      location=37.8267,-122.423
+      forecast-api-key=72cd4..8a
+    ```
+0. __With a [Worldweatheronline](http://www.worldweatheronline.com/) account__
+    * Worldweatheronline no longer gives out free API keys. [#83](https://github.com/schachmat/wego/issues/83)
+    * Your `.wegorc` file should have followings values :
+    ```
+      backend=worldweatheronline.com
+      location=New York
+      wwo-api-key=72cd4..8a
+    ```
+0. You may want to adjust other preferences, and choose if you want to use metric or imperial units. Save the file
 0. Run `wego` once again and you should get the weather forecast for the current
    and next 2 days.
 0. If you're visiting someone in e.g. London over the weekend, just run `wego 4
