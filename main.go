@@ -22,7 +22,7 @@ func main() {
 
 	// initialize global flags and default config
 	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
-	location := flag.String("city", "New York", "`LOCATION` to be queried")
+	location := flag.String("location", "New York", "`LOCATION` to be queried")
 	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si")
 	selectedBackend := flag.String("backend", "worldweatheronline.com", "`BACKEND` to be used")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
