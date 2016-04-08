@@ -21,11 +21,16 @@ func main() {
 	}
 
 	// initialize global flags and default config
-	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
 	location := flag.String("location", "New York", "`LOCATION` to be queried")
+	flag.StringVar(location, "l", "New York", "`LOCATION` to be queried (shorthand)")
+	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
+	flag.IntVar(numdays, "d", 3, "`NUMBER` of days of weather forecast to be displayed (shorthand)")
 	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si")
+	flag.StringVar(unitSystem, "u", "metric", "`UNITSYSTEM` to use for output. (shorthand)\n    \tChoices are: metric, imperial, si")
 	selectedBackend := flag.String("backend", "worldweatheronline.com", "`BACKEND` to be used")
+	flag.StringVar(selectedBackend, "b", "worldweatheronline.com", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
+	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
 
 	// read/write config and parse flags
 	if err := ingo.Parse("wego"); err != nil {
