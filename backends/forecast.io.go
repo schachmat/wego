@@ -117,17 +117,17 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 	ret.FeelsLikeC = dp.ApparentTemperature
 
 	if dp.PrecipProbability != nil {
-		var p int = int(*dp.PrecipProbability * 100)
+		p := int(*dp.PrecipProbability * 100)
 		ret.ChanceOfRainPercent = &p
 	}
 
 	if dp.PrecipIntensity != nil && *dp.PrecipIntensity >= 0 {
-		var p float32 = *dp.PrecipIntensity / 1000
+		p := *dp.PrecipIntensity / 1000
 		ret.PrecipM = &p
 	}
 
 	if dp.Visibility != nil && *dp.Visibility >= 0 {
-		var p float32 = *dp.Visibility * 1000
+		p := *dp.Visibility * 1000
 		ret.VisibleDistM = &p
 	}
 
@@ -138,7 +138,7 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 	//ret.WindGustKmph not provided by forecast.io :(
 
 	if dp.WindBearing != nil && *dp.WindBearing >= 0 {
-		var p int = int(*dp.WindBearing) % 360
+		p := int(*dp.WindBearing) % 360
 		ret.WinddirDegree = &p
 	}
 

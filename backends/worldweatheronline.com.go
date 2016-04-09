@@ -2,7 +2,6 @@ package backends
 
 import (
 	"bytes"
-	_ "crypto/sha512"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
@@ -12,6 +11,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	// needed for some go versions <1.4.2. TODO: Remove this import when golang
+	// v1.4.2 or later is in debian stable and the latest Ubuntu LTS release.
+	_ "crypto/sha512"
 
 	"github.com/schachmat/wego/iface"
 )
@@ -145,7 +148,7 @@ func wwoParseCond(cond wwoCond, date time.Time) (ret iface.Cond) {
 	ret.FeelsLikeC = cond.FeelsLikeC
 
 	if cond.PrecipMM != nil {
-		var p float32 = *cond.PrecipMM / 1000
+		p := *cond.PrecipMM / 1000
 		ret.PrecipM = &p
 	}
 
@@ -157,12 +160,12 @@ func wwoParseCond(cond wwoCond, date time.Time) (ret iface.Cond) {
 	}
 
 	if cond.VisibleDistKM != nil {
-		var p float32 = *cond.VisibleDistKM * 1000
+		p := *cond.VisibleDistKM * 1000
 		ret.VisibleDistM = &p
 	}
 
 	if cond.WinddirDegree != nil && *cond.WinddirDegree >= 0 {
-		var p int = *cond.WinddirDegree % 360
+		p := *cond.WinddirDegree % 360
 		ret.WinddirDegree = &p
 	}
 
