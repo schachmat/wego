@@ -1,13 +1,13 @@
 package backends
 
 import (
-	"regexp"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/schachmat/wego/iface"
