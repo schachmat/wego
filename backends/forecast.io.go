@@ -216,7 +216,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	go func() {
 		slots, err := c.fetchToday(location)
 		if err != nil {
-			log.Fatal("Failed to fetch todays weather data: %v\n", err)
+			log.Fatalf("Failed to fetch todays weather data: %v\n", err)
 		}
 		todayChan <- slots
 	}()
