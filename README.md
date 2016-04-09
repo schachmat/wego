@@ -4,7 +4,7 @@
 
 ![Screenshots](http://schachmat.github.io/wego/wego.gif)
 
-* show forecast for 1 to 5 days
+* show forecast for 1 to 7 days
 * nice ASCII art icons
 * displayed info (metric or imperial units):
   * temperature
@@ -29,38 +29,41 @@
 
 ##Installation
 
-To Install the wego binary into your `$GOPATH` as usual, run:
+To install or update the wego binary into your `$GOPATH` as usual, run:
 ```shell
 go get -u github.com/schachmat/wego
 ```
 
 ##Setup
 
-0. Run `wego` once. You will get an error message, but the `.wegorc` config
-   file will be generated in your `$HOME` folder (it will be hidden in some
-   file managers).
+0. Run `wego` once. You will get an error message, but the `.wegorc` config file
+   will be generated in your `$HOME` directory (it will be hidden in some file
+   managers due to the filename starting with a dot).
 0. __With a [forecast.io](http://forecast.io/) account__ (new default)
-    * Create your account on https://developer.forecast.io/
-    * Your `.wegorc` file should have followings values :
+    * Create your account on https://developer.forecast.io/register
+    * Update the following `.wegorc` config variables to fit your needs:
     ```
       backend=forecast.io
-      location=37.8267,-122.423
-      forecast-api-key=72cd4..8a
+      location=40.748,-73.985
+      forecast-api-key=YOUR_FORECAST.IO_API_KEY_HERE
     ```
 0. __With a [Worldweatheronline](http://www.worldweatheronline.com/) account__
     * Worldweatheronline no longer gives out free API keys. [#83](https://github.com/schachmat/wego/issues/83)
-    * Your `.wegorc` file should have followings values :
+    * Update the following `.wegorc` config variables to fit your needs:
     ```
       backend=worldweatheronline.com
       location=New York
-      wwo-api-key=72cd4..8a
+      wwo-api-key=YOUR_WORLDWEATHERONLINE_API_KEY_HERE
     ```
-0. You may want to adjust other preferences, and choose if you want to use metric or imperial units. Save the file
+0. You may want to adjust other preferences like `days`, `units` and `…-lang` as
+   well. Save the file.
 0. Run `wego` once again and you should get the weather forecast for the current
-   and next 2 days.
+   and next few days for your chosen location.
 0. If you're visiting someone in e.g. London over the weekend, just run `wego 4
    London` or `wego London 4` (the ordering of arguments makes no difference) to
-   get the forecast for the current and the next 3 days.
+   get the forecast for the current and the next 3 days. Unfortunately that does
+   not currently work with the forecast.io backend, as it only supports
+   latitude,longitude location specification.
 
 You can set the `$WEGORC` environment variable to override the default config
 file location.
@@ -73,7 +76,7 @@ file location.
 
 ##License - ISC
 
-Copyright (c) 2016,  <teichm@in.tum.de>
+Copyright (c) 2014-2016,  <teichm@in.tum.de>
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
