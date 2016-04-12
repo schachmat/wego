@@ -231,7 +231,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 		ret.Location = location
 	} else {
 		ret.GeoLoc = &iface.LatLon{Latitude: *resp.Latitude, Longitude: *resp.Longitude}
-		ret.Location = fmt.Sprintf("%f:%f", *resp.Latitude, *resp.Longitude)
+		ret.Location = fmt.Sprintf("%f,%f", *resp.Latitude, *resp.Longitude)
 	}
 
 	if ret.Current, err = c.parseCond(resp.Currently); err != nil {
