@@ -25,7 +25,7 @@
 * utf-8 terminal with 256 colors
 * A sane monospaced font containing all the required runes (I use `dejavu sans
   mono`)
-* A worldweatheronline.com API key (see Setup below)
+* An API key for the backend (see Setup below)
 
 ##Installation
 
