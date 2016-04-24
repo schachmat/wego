@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -15,8 +16,9 @@ import (
 )
 
 type aatConfig struct {
-	coords bool
-	unit   iface.UnitSystem
+	coords     bool
+	monochrome bool
+	unit       iface.UnitSystem
 }
 
 //TODO: replace s parameter with printf interface?
@@ -365,7 +367,8 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 }
 
 func (c *aatConfig) Setup() {
-	flag.BoolVar(&c.coords, "aat-coords", false, "Show geo coordinates")
+	flag.BoolVar(&c.coords, "aat-coords", false, "aat-frontend: Show geo coordinates")
+	flag.BoolVar(&c.monochrome, "aat-monochrome", false, "aat-frontend: Monochrome output")
 }
 
 func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
@@ -373,6 +376,9 @@ func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 
 	fmt.Printf("Weather for %s%s\n\n", r.Location, c.formatGeo(r.GeoLoc))
 	stdout := colorable.NewColorableStdout()
+	if c.monochrome {
+		stdout = colorable.NewNonColorable(os.Stdout)
+	}
 
 	out := c.formatCond(make([]string, 5), r.Current, true)
 	for _, val := range out {
