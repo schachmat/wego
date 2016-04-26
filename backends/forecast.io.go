@@ -55,7 +55,7 @@ const (
 	// see https://developer.forecast.io/docs/v2
 	// see also https://github.com/mlbright/forecast
 	//https://api.forecast.io/forecast/APIKEY/LATITUDE,LONGITUDE
-	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,daily,alerts,flags&extend=hourly"
+	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,alerts,flags&extend=hourly"
 )
 
 func (c *forecastConfig) ParseDaily(db forecastDataBlock, numdays int) []iface.Day {
