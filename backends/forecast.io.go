@@ -37,6 +37,7 @@ type forecastDataPoint struct {
 	WindSpeed           *float32 `json:"windSpeed"`
 	WindBearing         *float32 `json:"windBearing"`
 	Visibility          *float32 `json:"visibility"`
+	Humidity            *float32 `json:"humidity"`
 }
 
 type forecastDataBlock struct {
@@ -156,6 +157,10 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 	if dp.WindBearing != nil && *dp.WindBearing >= 0 {
 		p := int(*dp.WindBearing) % 360
 		ret.WinddirDegree = &p
+	}
+
+	if dp.Humidity != nil {
+		ret.Humidity = dp.Humidity
 	}
 
 	return ret, nil
