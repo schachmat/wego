@@ -5,7 +5,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/aadithyakv/ingo"
+	"github.com/schachmat/ingo"
 	_ "github.com/aadithyakv/wego/backends"
 	_ "github.com/aadithyakv/wego/frontends"
 	"github.com/aadithyakv/wego/iface"
