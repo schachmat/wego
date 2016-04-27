@@ -64,6 +64,7 @@ const (
 func (c *forecastConfig) ParseDaily(dbh forecastDataBlock, dbd forecastDataBlock, numdays int) []iface.Day {
 	var forecast []iface.Day
 	var day *iface.Day
+    var astro *iface.Astro
 
 	for _, dph := range dbh.Data {
 		slot, err := c.parseCond(dph)
@@ -84,14 +85,14 @@ func (c *forecastConfig) ParseDaily(dbh forecastDataBlock, dbd forecastDataBlock
 			day.Date = slot.Time
             for _, dpd := range dbd.Data {
                 if day.Date.Day() == time.Unix(int64(*dpd.Time) + 1, 0).In(c.tz).Day() {
-                    day.MintempC = *dpd.TemperatureMin
-                    day.MintempTime = *dpd.TemperatureMinTime
-                    day.MaxtempC = *dpd.TemperatureMax
-                    day.MaxtempTime = *dpd.TemperatureMaxTime
+                    day.MintempC = dpd.TemperatureMin
+                    day.MintempTime = time.Unix(int64(*dpd.TemperatureMinTime), 0).In(c.tz)
+                    day.MaxtempC = dpd.TemperatureMax
+                    day.MaxtempTime = time.Unix(int64(*dpd.TemperatureMaxTime), 0).In(c.tz)
                     astro = new(iface.Astro)
-                    astro.sunrise = *dpd.SunriseTime
-                    astro.sunset = *dpd.SunsetTime
-                    day.Astronomy = astro
+                    astro.Sunrise = time.Unix(int64(*dpd.SunriseTime), 0).In(c.tz)
+                    astro.Sunset = time.Unix(int64(*dpd.SunsetTime), 0).In(c.tz)
+                    day.Astronomy = *astro
                     break
                 }
             }
