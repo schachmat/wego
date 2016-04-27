@@ -72,6 +72,9 @@ type Cond struct {
 	// from south and 270 means the wind is blowing from west. The value must be
 	// in the range [0, 359].
 	WinddirDegree *int
+
+    // Relative humidity: must be between 0.0 and 1.0
+    Humidity *float32
 }
 
 type Astro struct {
