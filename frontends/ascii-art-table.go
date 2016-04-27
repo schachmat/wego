@@ -355,7 +355,7 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 		}
 	}
 
-	dateFmt := "┤ " + day.Date.Format("Mon 02. Jan") + " ├"
+	dateFmt := "┤ " + day.Date.Format("Mon, Jan 02") + " ├"
 	ret = append([]string{
 		"                                                       ┌─────────────┐                                                       ",
 		"┌──────────────────────────────┬───────────────────────" + dateFmt + "───────────────────────┬──────────────────────────────┐",
