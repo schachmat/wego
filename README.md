@@ -2,7 +2,7 @@
 
 ##Features
 
-![Screenshots](http://schachmat.github.io/wego/wego.gif)
+![Screenshots](https://cloud.githubusercontent.com/assets/8785474/14843914/03683c26-0c11-11e6-92ae-62b0405cca95.png)
 
 * show forecast for 1 to 7 days
 * nice ASCII art icons
