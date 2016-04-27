@@ -5,10 +5,10 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/schachmat/ingo"
-	_ "github.com/schachmat/wego/backends"
-	_ "github.com/schachmat/wego/frontends"
-	"github.com/schachmat/wego/iface"
+	"github.com/aadithyakv/ingo"
+	_ "github.com/aadithyakv/wego/backends"
+	_ "github.com/aadithyakv/wego/frontends"
+	"github.com/aadithyakv/wego/iface"
 )
 
 func main() {

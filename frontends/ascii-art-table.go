@@ -12,7 +12,7 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
-	"github.com/schachmat/wego/iface"
+	"github.com/aadithyakv/wego/iface"
 )
 
 type aatConfig struct {

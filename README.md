@@ -31,7 +31,7 @@
 
 To install or update the wego binary into your `$GOPATH` as usual, run:
 ```shell
-go get -u github.com/schachmat/wego
+go get -u github.com/aadithyakv/wego
 ```
 
 ##Setup
