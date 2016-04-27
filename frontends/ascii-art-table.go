@@ -42,28 +42,30 @@ func aatPad(s string, mustLen int) (ret string) {
 	return
 }
 
-func (c *aatConfig) formatTemp(cond iface.Cond) string {
-	color := func(temp float32) string {
-		colmap := []struct {
-			maxtemp float32
-			color   int
-		}{
-			{-15, 21}, {-12, 27}, {-9, 33}, {-6, 39}, {-3, 45},
-			{0, 51}, {2, 50}, {4, 49}, {6, 48}, {8, 47},
-			{10, 46}, {13, 82}, {16, 118}, {19, 154}, {22, 190},
-			{25, 226}, {28, 220}, {31, 214}, {34, 208}, {37, 202},
-		}
+func (c *aatConfig) colorTemp(tempC float32) string {
+    colmap := []struct {
+        maxtemp float32
+        color   int
+    }{
+        {-15, 21}, {-12, 27}, {-9, 33}, {-6, 39}, {-3, 45},
+        {0, 51}, {2, 50}, {4, 49}, {6, 48}, {8, 47},
+        {10, 46}, {13, 82}, {16, 118}, {19, 154}, {22, 190},
+        {25, 226}, {28, 220}, {31, 214}, {34, 208}, {37, 202},
+    }
 
-		col := 196
-		for _, candidate := range colmap {
-			if temp < candidate.maxtemp {
-				col = candidate.color
-				break
-			}
-		}
-		t, _ := c.unit.Temp(temp)
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(t))
-	}
+    col := 196
+    for _, candidate := range colmap {
+        if tempC < candidate.maxtemp {
+            col = candidate.color
+            break
+        }
+    }
+
+    t, _ := c.unit.Temp(tempC)
+    return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(t))
+}
+
+func (c *aatConfig) formatTemp(cond iface.Cond) string {
 
 	_, u := c.unit.Temp(0.0)
 
@@ -75,12 +77,12 @@ func (c *aatConfig) formatTemp(cond iface.Cond) string {
 	if cond.FeelsLikeC != nil {
 		fl := *cond.FeelsLikeC
 		if fl < t {
-			return aatPad(fmt.Sprintf("%s – %s %s", color(fl), color(t), u), 15)
+			return aatPad(fmt.Sprintf("%s – %s %s", c.colorTemp(fl), c.colorTemp(t), u), 15)
 		} else if fl > t {
-			return aatPad(fmt.Sprintf("%s – %s %s", color(t), color(fl), u), 15)
+			return aatPad(fmt.Sprintf("%s – %s %s", c.colorTemp(t), c.colorTemp(fl), u), 15)
 		}
 	}
-	return aatPad(fmt.Sprintf("%s %s", color(t), u), 15)
+	return aatPad(fmt.Sprintf("%s %s", c.colorTemp(t), u), 15)
 }
 
 func (c *aatConfig) formatWind(cond iface.Cond) string {
@@ -323,6 +325,20 @@ func (c *aatConfig) formatGeo(coords *iface.LatLon) (ret string) {
 	return
 }
 
+func center_string(s string, length int) (ret string) {
+	ansiEsc := regexp.MustCompile("\033.*?m")
+	ret = s
+	realLen := runewidth.StringWidth(ansiEsc.ReplaceAllLiteralString(s, ""))
+	delta := length - realLen
+    left_spaces := "\033[0m" + strings.Repeat(" ", int(delta/2))
+    right_spaces := left_spaces
+    if delta % 2 != 0 {
+        right_spaces += " "
+    }
+    ret = left_spaces + ret + right_spaces
+	return
+}
+
 func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 	desiredTimesOfDay := []time.Duration{
 		8 * time.Hour,
@@ -356,14 +372,37 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 	}
 
 	dateFmt := "┤ " + day.Date.Format("Mon, Jan 02") + " ├"
+
+    sunriseStr := "Sunrise: " + day.Astronomy.Sunrise.Format("03:04pm")
+    sunsetStr := "Sunset: " + day.Astronomy.Sunset.Format("03:04pm")
+    sunStr := sunriseStr + ", " + sunsetStr
+
+    _, u := c.unit.Temp(0.0)
+    minTempStr := c.colorTemp(*day.MintempC) + " " + u + " (at " + day.MintempTime.Format("03:04pm") + ")"
+    maxTempStr := c.colorTemp(*day.MaxtempC) + " " + u + " (at " + day.MaxtempTime.Format("03:04pm") + ")"
+    tempRangeStr := "Temperature range: " + minTempStr + " - " + maxTempStr
+
+    width := 123
+
 	ret = append([]string{
 		"                                                       ┌─────────────┐                                                       ",
 		"┌──────────────────────────────┬───────────────────────" + dateFmt + "───────────────────────┬──────────────────────────────┐",
 		"│           Morning            │             Noon      └──────┬──────┘    Evening            │            Night             │",
 		"├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤"},
 		ret...)
-	return append(ret,
-		"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
+
+	ret = append(ret,
+		"├──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┤")
+
+    ret = append(ret, "│" + center_string(tempRangeStr, width) + "│")
+    ret = append(ret,
+        "├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤")
+    ret = append(ret, "│" + center_string(sunStr, width) + "│")
+    ret = append(ret,
+		"└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘")
+    ret = append(ret, "")
+
+    return ret
 }
 
 func (c *aatConfig) Setup() {
