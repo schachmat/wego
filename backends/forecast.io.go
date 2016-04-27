@@ -30,7 +30,9 @@ type forecastDataPoint struct {
 	PrecipProbability   *float32 `json:"precipProbability"`
 	Temperature         *float32 `json:"temperature"`
 	TemperatureMin      *float32 `json:"temperatureMin"`
+	TemperatureMinTime  *float64 `json:"temperatureMinTime"`
 	TemperatureMax      *float32 `json:"temperatureMax"`
+	TemperatureMaxTime  *float64 `json:"temperatureMaxTime"`
 	ApparentTemperature *float32 `json:"apparentTemperature"`
 	WindSpeed           *float32 `json:"windSpeed"`
 	WindBearing         *float32 `json:"windBearing"`
@@ -49,6 +51,7 @@ type forecastResponse struct {
 	Timezone  *string           `json:"timezone"`
 	Currently forecastDataPoint `json:"currently"`
 	Hourly    forecastDataBlock `json:"hourly"`
+	Daily     forecastDataBlock `json:"daily"`
 }
 
 const (
