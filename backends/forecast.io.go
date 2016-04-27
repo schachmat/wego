@@ -61,12 +61,12 @@ const (
 	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,alerts,flags&extend=hourly"
 )
 
-func (c *forecastConfig) ParseDaily(db forecastDataBlock, numdays int) []iface.Day {
+func (c *forecastConfig) ParseDaily(dbh forecastDataBlock, dbd forecastDataBlock, numdays int) []iface.Day {
 	var forecast []iface.Day
 	var day *iface.Day
 
-	for _, dp := range db.Data {
-		slot, err := c.parseCond(dp)
+	for _, dph := range dbh.Data {
+		slot, err := c.parseCond(dph)
 		if err != nil {
 			log.Println("Error parsing hourly weather condition:", err)
 			continue
@@ -82,7 +82,19 @@ func (c *forecastConfig) ParseDaily(db forecastDataBlock, numdays int) []iface.D
 		if day == nil {
 			day = new(iface.Day)
 			day.Date = slot.Time
-			//TODO: min-,max-temperature, astronomy
+            for _, dpd := range dbd.Data {
+                if day.Date.Day() == time.Unix(int64(*dpd.Time) + 1, 0).In(c.tz).Day() {
+                    day.MintempC = *dpd.TemperatureMin
+                    day.MintempTime = *dpd.TemperatureMinTime
+                    day.MaxtempC = *dpd.TemperatureMax
+                    day.MaxtempTime = *dpd.TemperatureMaxTime
+                    astro = new(iface.Astro)
+                    astro.sunrise = *dpd.SunriseTime
+                    astro.sunset = *dpd.SunsetTime
+                    day.Astronomy = astro
+                    break
+                }
+            }
 		}
 
 		day.Slots = append(day.Slots, slot)
@@ -190,7 +202,7 @@ func (c *forecastConfig) fetchToday(location string) ([]iface.Cond, error) {
 		return nil, fmt.Errorf("Failed to fetch todays weather data: %v\n", err)
 	}
 
-	days := c.ParseDaily(resp.Hourly, 1)
+	days := c.ParseDaily(resp.Hourly, resp.Daily, 1)
 	if len(days) < 1 {
 		return nil, fmt.Errorf("Failed to parse today\n")
 	}
@@ -240,7 +252,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	if ret.Current, err = c.parseCond(resp.Currently); err != nil {
 		log.Fatalf("Could not parse current weather condition: %v", err)
 	}
-	ret.Forecast = c.ParseDaily(resp.Hourly, numdays)
+	ret.Forecast = c.ParseDaily(resp.Hourly, resp.Daily, numdays)
 
 	if numdays >= 1 {
 		var tHistory, tFuture = <-todayChan, ret.Forecast[0].Slots
