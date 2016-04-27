@@ -12,7 +12,7 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
-	"github.com/schachmat/wego/iface"
+	"github.com/aadithyakv/wego/iface"
 )
 
 type aatConfig struct {
@@ -42,28 +42,30 @@ func aatPad(s string, mustLen int) (ret string) {
 	return
 }
 
-func (c *aatConfig) formatTemp(cond iface.Cond) string {
-	color := func(temp float32) string {
-		colmap := []struct {
-			maxtemp float32
-			color   int
-		}{
-			{-15, 21}, {-12, 27}, {-9, 33}, {-6, 39}, {-3, 45},
-			{0, 51}, {2, 50}, {4, 49}, {6, 48}, {8, 47},
-			{10, 46}, {13, 82}, {16, 118}, {19, 154}, {22, 190},
-			{25, 226}, {28, 220}, {31, 214}, {34, 208}, {37, 202},
-		}
+func (c *aatConfig) colorTemp(tempC float32) string {
+    colmap := []struct {
+        maxtemp float32
+        color   int
+    }{
+        {-15, 21}, {-12, 27}, {-9, 33}, {-6, 39}, {-3, 45},
+        {0, 51}, {2, 50}, {4, 49}, {6, 48}, {8, 47},
+        {10, 46}, {13, 82}, {16, 118}, {19, 154}, {22, 190},
+        {25, 226}, {28, 220}, {31, 214}, {34, 208}, {37, 202},
+    }
 
-		col := 196
-		for _, candidate := range colmap {
-			if temp < candidate.maxtemp {
-				col = candidate.color
-				break
-			}
-		}
-		t, _ := c.unit.Temp(temp)
-		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(t))
-	}
+    col := 196
+    for _, candidate := range colmap {
+        if tempC < candidate.maxtemp {
+            col = candidate.color
+            break
+        }
+    }
+
+    t, _ := c.unit.Temp(tempC)
+    return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(t))
+}
+
+func (c *aatConfig) formatTemp(cond iface.Cond) string {
 
 	_, u := c.unit.Temp(0.0)
 
@@ -75,12 +77,12 @@ func (c *aatConfig) formatTemp(cond iface.Cond) string {
 	if cond.FeelsLikeC != nil {
 		fl := *cond.FeelsLikeC
 		if fl < t {
-			return aatPad(fmt.Sprintf("%s – %s %s", color(fl), color(t), u), 15)
+			return aatPad(fmt.Sprintf("%s – %s %s", c.colorTemp(fl), c.colorTemp(t), u), 15)
 		} else if fl > t {
-			return aatPad(fmt.Sprintf("%s – %s %s", color(t), color(fl), u), 15)
+			return aatPad(fmt.Sprintf("%s – %s %s", c.colorTemp(t), c.colorTemp(fl), u), 15)
 		}
 	}
-	return aatPad(fmt.Sprintf("%s %s", color(t), u), 15)
+	return aatPad(fmt.Sprintf("%s %s", c.colorTemp(t), u), 15)
 }
 
 func (c *aatConfig) formatWind(cond iface.Cond) string {
@@ -150,6 +152,25 @@ func (c *aatConfig) formatRain(cond iface.Cond) string {
 	return aatPad("", 15)
 }
 
+func (c *aatConfig) formatHumidity(cond iface.Cond) string {
+	if cond.Humidity == nil {
+        return aatPad("", 15)
+    }
+
+    rh_percentage := int(*cond.Humidity*100)
+    green := 46
+    red := 196
+    col := green
+    if rh_percentage < 35 {
+        col = red
+    }
+    if rh_percentage > 65 {
+        col = red
+    }
+    s := fmt.Sprintf("\033[38;5;%03dm%d%s\033[0m", col, rh_percentage, "%")
+    return aatPad(fmt.Sprintf("RH: %s", s), 15)
+}
+
 func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret []string) {
 	codes := map[iface.WeatherCode][]string{
 		iface.CodeUnknown: {
@@ -158,12 +179,14 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"    (        ",
 			"     `-᾿     ",
 			"      •      ",
+			"             ",
 		},
 		iface.CodeCloudy: {
 			"             ",
 			"\033[38;5;250m     .--.    \033[0m",
 			"\033[38;5;250m  .-(    ).  \033[0m",
 			"\033[38;5;250m (___.__)__) \033[0m",
+			"             ",
 			"             ",
 		},
 		iface.CodeFog: {
@@ -172,6 +195,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;251m  _ - _ - _  \033[0m",
 			"\033[38;5;251m _ - _ - _ - \033[0m",
 			"             ",
+			"             ",
 		},
 		iface.CodeHeavyRain: {
 			"\033[38;5;240;1m     .-.     \033[0m",
@@ -179,6 +203,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;240;1m   (___(__)  \033[0m",
 			"\033[38;5;21;1m  ‚ʻ‚ʻ‚ʻ‚ʻ   \033[0m",
 			"\033[38;5;21;1m  ‚ʻ‚ʻ‚ʻ‚ʻ   \033[0m",
+			"             ",
 		},
 		iface.CodeHeavyShowers: {
 			"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
@@ -186,6 +211,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
 			"\033[38;5;21;1m   ‚ʻ‚ʻ‚ʻ‚ʻ  \033[0m",
 			"\033[38;5;21;1m   ‚ʻ‚ʻ‚ʻ‚ʻ  \033[0m",
+			"             ",
 		},
 		iface.CodeHeavySnow: {
 			"\033[38;5;240;1m     .-.     \033[0m",
@@ -193,6 +219,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;240;1m   (___(__)  \033[0m",
 			"\033[38;5;255;1m   * * * *   \033[0m",
 			"\033[38;5;255;1m  * * * *    \033[0m",
+			"             ",
 		},
 		iface.CodeHeavySnowShowers: {
 			"\033[38;5;226m _`/\"\"\033[38;5;240;1m.-.    \033[0m",
@@ -200,6 +227,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;240;1m(___(__) \033[0m",
 			"\033[38;5;255;1m    * * * *  \033[0m",
 			"\033[38;5;255;1m   * * * *   \033[0m",
+			"             ",
 		},
 		iface.CodeLightRain: {
 			"\033[38;5;250m     .-.     \033[0m",
@@ -207,6 +235,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;250m   (___(__)  \033[0m",
 			"\033[38;5;111m    ʻ ʻ ʻ ʻ  \033[0m",
 			"\033[38;5;111m   ʻ ʻ ʻ ʻ   \033[0m",
+			"             ",
 		},
 		iface.CodeLightShowers: {
 			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
@@ -214,6 +243,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 			"\033[38;5;111m     ʻ ʻ ʻ ʻ \033[0m",
 			"\033[38;5;111m    ʻ ʻ ʻ ʻ  \033[0m",
+			"             ",
 		},
 		iface.CodeLightSleet: {
 			"\033[38;5;250m     .-.     \033[0m",
@@ -221,6 +251,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;250m   (___(__)  \033[0m",
 			"\033[38;5;111m    ʻ \033[38;5;255m*\033[38;5;111m ʻ \033[38;5;255m*  \033[0m",
 			"\033[38;5;255m   *\033[38;5;111m ʻ \033[38;5;255m*\033[38;5;111m ʻ   \033[0m",
+			"             ",
 		},
 		iface.CodeLightSleetShowers: {
 			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
@@ -228,6 +259,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 			"\033[38;5;111m     ʻ \033[38;5;255m*\033[38;5;111m ʻ \033[38;5;255m* \033[0m",
 			"\033[38;5;255m    *\033[38;5;111m ʻ \033[38;5;255m*\033[38;5;111m ʻ  \033[0m",
+			"             ",
 		},
 		iface.CodeLightSnow: {
 			"\033[38;5;250m     .-.     \033[0m",
@@ -235,6 +267,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;250m   (___(__)  \033[0m",
 			"\033[38;5;255m    *  *  *  \033[0m",
 			"\033[38;5;255m   *  *  *   \033[0m",
+			"             ",
 		},
 		iface.CodeLightSnowShowers: {
 			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
@@ -242,12 +275,14 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 			"\033[38;5;255m     *  *  * \033[0m",
 			"\033[38;5;255m    *  *  *  \033[0m",
+			"             ",
 		},
 		iface.CodePartlyCloudy: {
 			"\033[38;5;226m   \\  /\033[0m      ",
 			"\033[38;5;226m _ /\"\"\033[38;5;250m.-.    \033[0m",
 			"\033[38;5;226m   \\_\033[38;5;250m(   ).  \033[0m",
 			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
+			"             ",
 			"             ",
 		},
 		iface.CodeSunny: {
@@ -256,6 +291,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m  ‒ (   ) ‒  \033[0m",
 			"\033[38;5;226m     `-᾿     \033[0m",
 			"\033[38;5;226m    /   \\    \033[0m",
+			"             ",
 		},
 		iface.CodeThunderyHeavyRain: {
 			"\033[38;5;240;1m     .-.     \033[0m",
@@ -263,6 +299,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;240;1m   (___(__)  \033[0m",
 			"\033[38;5;21;1m  ‚ʻ\033[38;5;228;5m⚡\033[38;5;21;25mʻ‚\033[38;5;228;5m⚡\033[38;5;21;25m‚ʻ   \033[0m",
 			"\033[38;5;21;1m  ‚ʻ‚ʻ\033[38;5;228;5m⚡\033[38;5;21;25mʻ‚ʻ   \033[0m",
+			"             ",
 		},
 		iface.CodeThunderyShowers: {
 			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
@@ -270,6 +307,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 			"\033[38;5;228;5m    ⚡\033[38;5;111;25mʻ ʻ\033[38;5;228;5m⚡\033[38;5;111;25mʻ ʻ \033[0m",
 			"\033[38;5;111m    ʻ ʻ ʻ ʻ  \033[0m",
+			"             ",
 		},
 		iface.CodeThunderySnowShowers: {
 			"\033[38;5;226m _`/\"\"\033[38;5;250m.-.    \033[0m",
@@ -277,12 +315,14 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 			"\033[38;5;255m     *\033[38;5;228;5m⚡\033[38;5;255;25m *\033[38;5;228;5m⚡\033[38;5;255;25m * \033[0m",
 			"\033[38;5;255m    *  *  *  \033[0m",
+			"             ",
 		},
 		iface.CodeVeryCloudy: {
 			"             ",
 			"\033[38;5;240;1m     .--.    \033[0m",
 			"\033[38;5;240;1m  .-(    ).  \033[0m",
 			"\033[38;5;240;1m (___.__)__) \033[0m",
+			"             ",
 			"             ",
 		},
 	}
@@ -302,6 +342,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[2], icon[2], c.formatWind(cond)))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[3], icon[3], c.formatVisibility(cond)))
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[4], icon[4], c.formatRain(cond)))
+	ret = append(ret, fmt.Sprintf("%v %v %v", cur[5], icon[5], c.formatHumidity(cond)))
 	return
 }
 
@@ -323,6 +364,20 @@ func (c *aatConfig) formatGeo(coords *iface.LatLon) (ret string) {
 	return
 }
 
+func center_string(s string, length int) (ret string) {
+	ansiEsc := regexp.MustCompile("\033.*?m")
+	ret = s
+	realLen := runewidth.StringWidth(ansiEsc.ReplaceAllLiteralString(s, ""))
+	delta := length - realLen
+    left_spaces := "\033[0m" + strings.Repeat(" ", int(delta/2))
+    right_spaces := left_spaces
+    if delta % 2 != 0 {
+        right_spaces += " "
+    }
+    ret = left_spaces + ret + right_spaces
+	return
+}
+
 func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 	desiredTimesOfDay := []time.Duration{
 		8 * time.Hour,
@@ -330,7 +385,7 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 		19 * time.Hour,
 		23 * time.Hour,
 	}
-	ret = make([]string, 5)
+	ret = make([]string, 6)
 	for i := range ret {
 		ret[i] = "│"
 	}
@@ -355,15 +410,38 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 		}
 	}
 
-	dateFmt := "┤ " + day.Date.Format("Mon 02. Jan") + " ├"
+	dateFmt := "┤ " + day.Date.Format("Mon, Jan 02") + " ├"
+
+    sunriseStr := "Sunrise: " + day.Astronomy.Sunrise.Format("03:04pm")
+    sunsetStr := "Sunset: " + day.Astronomy.Sunset.Format("03:04pm")
+    sunStr := sunriseStr + ", " + sunsetStr
+
+    _, u := c.unit.Temp(0.0)
+    minTempStr := c.colorTemp(*day.MintempC) + " " + u + " (at " + day.MintempTime.Format("03:04pm") + ")"
+    maxTempStr := c.colorTemp(*day.MaxtempC) + " " + u + " (at " + day.MaxtempTime.Format("03:04pm") + ")"
+    tempRangeStr := "Temperature range: " + minTempStr + " - " + maxTempStr
+
+    width := 123
+
 	ret = append([]string{
 		"                                                       ┌─────────────┐                                                       ",
 		"┌──────────────────────────────┬───────────────────────" + dateFmt + "───────────────────────┬──────────────────────────────┐",
 		"│           Morning            │             Noon      └──────┬──────┘    Evening            │            Night             │",
 		"├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤"},
 		ret...)
-	return append(ret,
-		"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
+
+	ret = append(ret,
+		"├──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┤")
+
+    ret = append(ret, "│" + center_string(tempRangeStr, width) + "│")
+    ret = append(ret,
+        "├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤")
+    ret = append(ret, "│" + center_string(sunStr, width) + "│")
+    ret = append(ret,
+		"└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘")
+    ret = append(ret, "")
+
+    return ret
 }
 
 func (c *aatConfig) Setup() {
@@ -380,7 +458,7 @@ func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 		stdout = colorable.NewNonColorable(os.Stdout)
 	}
 
-	out := c.formatCond(make([]string, 5), r.Current, true)
+	out := c.formatCond(make([]string, 6), r.Current, true)
 	for _, val := range out {
 		fmt.Fprintln(stdout, val)
 	}

@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/schachmat/wego/iface"
+	"github.com/aadithyakv/wego/iface"
 )
 
 type forecastConfig struct {
@@ -30,11 +30,14 @@ type forecastDataPoint struct {
 	PrecipProbability   *float32 `json:"precipProbability"`
 	Temperature         *float32 `json:"temperature"`
 	TemperatureMin      *float32 `json:"temperatureMin"`
+	TemperatureMinTime  *float64 `json:"temperatureMinTime"`
 	TemperatureMax      *float32 `json:"temperatureMax"`
+	TemperatureMaxTime  *float64 `json:"temperatureMaxTime"`
 	ApparentTemperature *float32 `json:"apparentTemperature"`
 	WindSpeed           *float32 `json:"windSpeed"`
 	WindBearing         *float32 `json:"windBearing"`
 	Visibility          *float32 `json:"visibility"`
+	Humidity            *float32 `json:"humidity"`
 }
 
 type forecastDataBlock struct {
@@ -49,21 +52,23 @@ type forecastResponse struct {
 	Timezone  *string           `json:"timezone"`
 	Currently forecastDataPoint `json:"currently"`
 	Hourly    forecastDataBlock `json:"hourly"`
+	Daily     forecastDataBlock `json:"daily"`
 }
 
 const (
 	// see https://developer.forecast.io/docs/v2
 	// see also https://github.com/mlbright/forecast
 	//https://api.forecast.io/forecast/APIKEY/LATITUDE,LONGITUDE
-	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,daily,alerts,flags&extend=hourly"
+	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,alerts,flags&extend=hourly"
 )
 
-func (c *forecastConfig) ParseDaily(db forecastDataBlock, numdays int) []iface.Day {
+func (c *forecastConfig) ParseDaily(dbh forecastDataBlock, dbd forecastDataBlock, numdays int) []iface.Day {
 	var forecast []iface.Day
 	var day *iface.Day
+    var astro *iface.Astro
 
-	for _, dp := range db.Data {
-		slot, err := c.parseCond(dp)
+	for _, dph := range dbh.Data {
+		slot, err := c.parseCond(dph)
 		if err != nil {
 			log.Println("Error parsing hourly weather condition:", err)
 			continue
@@ -79,7 +84,19 @@ func (c *forecastConfig) ParseDaily(db forecastDataBlock, numdays int) []iface.D
 		if day == nil {
 			day = new(iface.Day)
 			day.Date = slot.Time
-			//TODO: min-,max-temperature, astronomy
+            for _, dpd := range dbd.Data {
+                if day.Date.Day() == time.Unix(int64(*dpd.Time) + 1, 0).In(c.tz).Day() {
+                    day.MintempC = dpd.TemperatureMin
+                    day.MintempTime = time.Unix(int64(*dpd.TemperatureMinTime), 0).In(c.tz)
+                    day.MaxtempC = dpd.TemperatureMax
+                    day.MaxtempTime = time.Unix(int64(*dpd.TemperatureMaxTime), 0).In(c.tz)
+                    astro = new(iface.Astro)
+                    astro.Sunrise = time.Unix(int64(*dpd.SunriseTime), 0).In(c.tz)
+                    astro.Sunset = time.Unix(int64(*dpd.SunsetTime), 0).In(c.tz)
+                    day.Astronomy = *astro
+                    break
+                }
+            }
 		}
 
 		day.Slots = append(day.Slots, slot)
@@ -142,6 +159,10 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 		ret.WinddirDegree = &p
 	}
 
+	if dp.Humidity != nil {
+		ret.Humidity = dp.Humidity
+	}
+
 	return ret, nil
 }
 
@@ -187,7 +208,7 @@ func (c *forecastConfig) fetchToday(location string) ([]iface.Cond, error) {
 		return nil, fmt.Errorf("Failed to fetch todays weather data: %v\n", err)
 	}
 
-	days := c.ParseDaily(resp.Hourly, 1)
+	days := c.ParseDaily(resp.Hourly, resp.Daily, 1)
 	if len(days) < 1 {
 		return nil, fmt.Errorf("Failed to parse today\n")
 	}
@@ -237,7 +258,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	if ret.Current, err = c.parseCond(resp.Currently); err != nil {
 		log.Fatalf("Could not parse current weather condition: %v", err)
 	}
-	ret.Forecast = c.ParseDaily(resp.Hourly, numdays)
+	ret.Forecast = c.ParseDaily(resp.Hourly, resp.Daily, numdays)
 
 	if numdays >= 1 {
 		var tHistory, tFuture = <-todayChan, ret.Forecast[0].Slots
