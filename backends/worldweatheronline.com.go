@@ -265,9 +265,11 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 	if err != nil {
 		log.Println("Unable to fetch geo location:", err)
 		res <- nil
+		return
 	} else if hres.StatusCode != 200 {
 		log.Println("Unable to fetch geo location: http status", hres.StatusCode)
 		res <- nil
+		return
 	}
 	defer hres.Body.Close()
 
@@ -275,6 +277,7 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 	if err != nil {
 		log.Println("Unable to read geo location data:", err)
 		res <- nil
+		return
 	}
 
 	if c.debug {
@@ -285,12 +288,14 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 	if err = json.Unmarshal(body, &coordResp); err != nil {
 		log.Println("Unable to unmarshal geo location data:", err)
 		res <- nil
+		return
 	}
 
 	r := coordResp.Search.Result
 	if len(r) < 1 || r[0].Latitude == nil || r[0].Longitude == nil {
 		log.Println("Malformed geo location response")
 		res <- nil
+		return
 	}
 
 	res <- &iface.LatLon{Latitude: *r[0].Latitude, Longitude: *r[0].Longitude}
