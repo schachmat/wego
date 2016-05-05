@@ -2,14 +2,35 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"os"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/schachmat/ingo"
 	_ "github.com/schachmat/wego/backends"
 	_ "github.com/schachmat/wego/frontends"
 	"github.com/schachmat/wego/iface"
 )
+
+func pluginLists() {
+	bEnds := make([]string, 0, len(iface.AllBackends))
+	for name := range iface.AllBackends {
+		bEnds = append(bEnds, name)
+	}
+	sort.Strings(bEnds)
+
+	fEnds := make([]string, 0, len(iface.AllFrontends))
+	for name := range iface.AllFrontends {
+		fEnds = append(fEnds, name)
+	}
+	sort.Strings(fEnds)
+
+	fmt.Fprintln(os.Stderr, "Available backends:", strings.Join(bEnds, ", "))
+	fmt.Fprintln(os.Stderr, "Available frontends:", strings.Join(fEnds, ", "))
+}
 
 func main() {
 	// initialize backends and frontends (flags and default config)
@@ -31,6 +52,13 @@ func main() {
 	flag.StringVar(selectedBackend, "b", "forecast.io", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
+
+	// print out a list of all backends and frontends in the usage
+	tmpUsage := flag.Usage
+	flag.Usage = func() {
+		tmpUsage()
+		pluginLists()
+	}
 
 	// read/write config and parse flags
 	if err := ingo.Parse("wego"); err != nil {
