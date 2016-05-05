@@ -21,13 +21,13 @@ type forecastConfig struct {
 }
 
 type forecastDataPoint struct {
-	Time                *float64 `json:"time"`
+	Time                *int64   `json:"time"`
 	Summary             string   `json:"summary"`
 	Icon                string   `json:"icon"`
-	SunriseTime         *float32 `json:"sunriseTime"`
-	SunsetTime          *float32 `json:"sunsetTime"`
+	SunriseTime         *int64   `json:"sunriseTime"`
+	SunsetTime          *int64   `json:"sunsetTime"`
 	PrecipIntensity     *float32 `json:"precipIntensity"`
-	PrecipProbability   *float32 `json:"precipProbability"`
+	PrecipProb          *float32 `json:"precipProbability"`
 	Temperature         *float32 `json:"temperature"`
 	TemperatureMin      *float32 `json:"temperatureMin"`
 	TemperatureMax      *float32 `json:"temperatureMax"`
@@ -62,12 +62,12 @@ const (
 
 func (c *forecastConfig) parseAstro(cur *iface.Day, days []forecastDataPoint) {
 	for _, day := range days {
-		if day.Time != nil && cur.Date.Day() == time.Unix(int64(*day.Time), 0).In(c.tz).Day() {
+		if day.Time != nil && cur.Date.Day() == time.Unix(*day.Time, 0).In(c.tz).Day() {
 			if day.SunriseTime != nil {
-				cur.Astronomy.Sunrise = time.Unix(int64(*day.SunriseTime), 0).In(c.tz)
+				cur.Astronomy.Sunrise = time.Unix(*day.SunriseTime, 0).In(c.tz)
 			}
 			if day.SunsetTime != nil {
-				cur.Astronomy.Sunset = time.Unix(int64(*day.SunsetTime), 0).In(c.tz)
+				cur.Astronomy.Sunset = time.Unix(*day.SunsetTime, 0).In(c.tz)
 			}
 			return
 		}
@@ -121,7 +121,7 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 	if dp.Time == nil {
 		return iface.Cond{}, fmt.Errorf("The forecast.io response did not provide a time for the weather condition")
 	}
-	ret.Time = time.Unix(int64(*dp.Time), 0).In(c.tz)
+	ret.Time = time.Unix(*dp.Time, 0).In(c.tz)
 
 	ret.Code = iface.CodeUnknown
 	if val, ok := codemap[dp.Icon]; ok {
@@ -132,8 +132,8 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 	ret.TempC = dp.Temperature
 	ret.FeelsLikeC = dp.ApparentTemperature
 
-	if dp.PrecipProbability != nil {
-		p := int(*dp.PrecipProbability * 100)
+	if dp.PrecipProb != nil && *dp.PrecipProb >= 0 && *dp.PrecipProb <= 1 {
+		p := int(*dp.PrecipProb * 100)
 		ret.ChanceOfRainPercent = &p
 	}
 
