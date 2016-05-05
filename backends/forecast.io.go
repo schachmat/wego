@@ -29,8 +29,6 @@ type forecastDataPoint struct {
 	PrecipIntensity     *float32 `json:"precipIntensity"`
 	PrecipProb          *float32 `json:"precipProbability"`
 	Temperature         *float32 `json:"temperature"`
-	TemperatureMin      *float32 `json:"temperatureMin"`
-	TemperatureMax      *float32 `json:"temperatureMax"`
 	ApparentTemperature *float32 `json:"apparentTemperature"`
 	WindSpeed           *float32 `json:"windSpeed"`
 	WindBearing         *float32 `json:"windBearing"`

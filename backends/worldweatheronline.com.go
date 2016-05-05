@@ -43,8 +43,6 @@ type wwoDay struct {
 	}
 	Date     string
 	Hourly   []wwoCond
-	MaxtempC *float32 `json:"maxtempC,string"`
-	MintempC *float32 `json:"mintempC,string"`
 }
 
 type wwoResponse struct {
@@ -183,9 +181,6 @@ func wwoParseDay(day wwoDay, index int) (ret iface.Day) {
 	if err == nil {
 		ret.Date = date
 	}
-
-	ret.MaxtempC = day.MaxtempC
-	ret.MintempC = day.MintempC
 
 	if day.Hourly != nil && len(day.Hourly) > 0 {
 		for _, slot := range day.Hourly {

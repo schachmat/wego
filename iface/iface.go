@@ -88,12 +88,6 @@ type Day struct {
 	// Date is the date of this Day.
 	Date time.Time
 
-	// MaxtempC is the maximum temperature on that day in degrees celsius.
-	MaxtempC *float32
-
-	// MintempC is the minimum temperature on that day in degrees celsius.
-	MintempC *float32
-
 	// Slots is a slice of conditions for different times of day. They should be
 	// ordered by the contained Time field.
 	Slots []Cond
