@@ -256,9 +256,10 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	if ret.Current, err = c.parseCond(resp.Currently); err != nil {
 		log.Fatalf("Could not parse current weather condition: %v", err)
 	}
-	ret.Forecast = c.parseDaily(resp.Hourly, resp.Daily, numdays)
 
 	if numdays >= 1 {
+		ret.Forecast = c.parseDaily(resp.Hourly, resp.Daily, numdays)
+
 		var tHistory, tFuture = <-todayChan, ret.Forecast[0].Slots
 		var tRet []iface.Cond
 		h, f := 0, 0
