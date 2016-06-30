@@ -1,8 +1,8 @@
 **wego** is a weather client for the terminal.
 
-##Features
-
 ![Screenshots](http://schachmat.github.io/wego/wego.gif)
+
+##Features
 
 * show forecast for 1 to 7 days
 * nice ASCII art icons
