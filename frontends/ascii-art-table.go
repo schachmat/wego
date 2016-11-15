@@ -339,10 +339,8 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 	cols := make([]iface.Cond, len(desiredTimesOfDay))
 	// find hourly data which fits the desired times of day best
 	for _, candidate := range day.Slots {
-		cand := candidate.Time.UTC().Sub(candidate.Time.Truncate(24 * time.Hour))
-		for i, col := range cols {
-			cur := col.Time.Sub(col.Time.Truncate(24 * time.Hour))
-			if col.Time.IsZero() || math.Abs(float64(cand-desiredTimesOfDay[i])) < math.Abs(float64(cur-desiredTimesOfDay[i])) {
+		for i := range cols {
+			if candidate.Time.Add(-desiredTimesOfDay[i]).Round(time.Hour).Hour() == 0 {
 				cols[i] = candidate
 			}
 		}
