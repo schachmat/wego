@@ -7,7 +7,7 @@
 * show forecast for 1 to 7 days
 * nice ASCII art icons
 * displayed info (metric or imperial units):
-  * temperature
+  * temperature range ([felt](https://en.wikipedia.org/wiki/Wind_chill) and measured)
   * windspeed and direction
   * viewing distance
   * precipitation amount and probability
