@@ -23,6 +23,7 @@ const (
 	CodeLightSnowShowers
 	CodePartlyCloudy
 	CodeSunny
+	CodeClearNight
 	CodeThunderyHeavyRain
 	CodeThunderyShowers
 	CodeThunderySnowShowers

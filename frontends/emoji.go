@@ -73,6 +73,7 @@ func (c *emojiConfig) formatCond(cur []string, cond iface.Cond, current bool) (r
 		iface.CodeLightSnowShowers:    {"🌨"},
 		iface.CodePartlyCloudy:        {"⛅️"},
 		iface.CodeSunny:               {"☀️"},
+		iface.CodeClearNight:          {"🌜"},
 		iface.CodeThunderyHeavyRain:   {"🌩"},
 		iface.CodeThunderyShowers:     {"⛈"},
 		iface.CodeThunderySnowShowers: {"⛈"},
