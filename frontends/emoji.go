@@ -57,26 +57,26 @@ func (c *emojiConfig) formatTemp(cond iface.Cond) string {
 }
 
 func (c *emojiConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret []string) {
-	codes := map[iface.WeatherCode][]string{
-		iface.CodeUnknown:             {"✨"},
-		iface.CodeCloudy:              {"☁️"},
-		iface.CodeFog:                 {"🌫"},
-		iface.CodeHeavyRain:           {"🌧"},
-		iface.CodeHeavyShowers:        {"🌧"},
-		iface.CodeHeavySnow:           {"❄️"},
-		iface.CodeHeavySnowShowers:    {"❄️"},
-		iface.CodeLightRain:           {"🌦"},
-		iface.CodeLightShowers:        {"🌦"},
-		iface.CodeLightSleet:          {"🌧"},
-		iface.CodeLightSleetShowers:   {"🌧"},
-		iface.CodeLightSnow:           {"🌨"},
-		iface.CodeLightSnowShowers:    {"🌨"},
-		iface.CodePartlyCloudy:        {"⛅️"},
-		iface.CodeSunny:               {"☀️"},
-		iface.CodeThunderyHeavyRain:   {"🌩"},
-		iface.CodeThunderyShowers:     {"⛈"},
-		iface.CodeThunderySnowShowers: {"⛈"},
-		iface.CodeVeryCloudy:          {"☁️"},
+	codes := map[iface.WeatherCode]string{
+		iface.CodeUnknown:             "✨",
+		iface.CodeCloudy:              "☁️",
+		iface.CodeFog:                 "🌫",
+		iface.CodeHeavyRain:           "🌧",
+		iface.CodeHeavyShowers:        "🌧",
+		iface.CodeHeavySnow:           "❄️",
+		iface.CodeHeavySnowShowers:    "❄️",
+		iface.CodeLightRain:           "🌦",
+		iface.CodeLightShowers:        "🌦",
+		iface.CodeLightSleet:          "🌧",
+		iface.CodeLightSleetShowers:   "🌧",
+		iface.CodeLightSnow:           "🌨",
+		iface.CodeLightSnowShowers:    "🌨",
+		iface.CodePartlyCloudy:        "⛅️",
+		iface.CodeSunny:               "☀️",
+		iface.CodeThunderyHeavyRain:   "🌩",
+		iface.CodeThunderyShowers:     "⛈",
+		iface.CodeThunderySnowShowers: "⛈",
+		iface.CodeVeryCloudy:          "☁️",
 	}
 
 	icon, ok := codes[cond.Code]
@@ -90,7 +90,7 @@ func (c *emojiConfig) formatCond(cur []string, cond iface.Cond, current bool) (r
 	}
 
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[0], "", desc))
-	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon[0], c.formatTemp(cond)))
+	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon, c.formatTemp(cond)))
 	return
 }
 
