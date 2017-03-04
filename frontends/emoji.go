@@ -83,6 +83,9 @@ func (c *emojiConfig) formatCond(cur []string, cond iface.Cond, current bool) (r
 	if !ok {
 		log.Fatalln("emoji-frontend: The following weather code has no icon:", cond.Code)
 	}
+	if runewidth.StringWidth(icon) == 1 {
+		icon += " "
+	}
 
 	desc := cond.Desc
 	if !current {
@@ -90,7 +93,7 @@ func (c *emojiConfig) formatCond(cur []string, cond iface.Cond, current bool) (r
 	}
 
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[0], "", desc))
-	ret = append(ret, fmt.Sprintf("%v %v %v", cur[1], icon, c.formatTemp(cond)))
+	ret = append(ret, fmt.Sprintf("%v%v %v", cur[1], icon, c.formatTemp(cond)))
 	return
 }
 
