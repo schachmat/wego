@@ -47,7 +47,7 @@ func main() {
 	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
 	flag.IntVar(numdays, "d", 3, "`NUMBER` of days of weather forecast to be displayed (shorthand)")
 	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si")
-	flag.StringVar(unitSystem, "u", "metric", "`UNITSYSTEM` to use for output. (shorthand)\n    \tChoices are: metric, imperial, si")
+	flag.StringVar(unitSystem, "u", "metric", "`UNITSYSTEM` to use for output. (shorthand)\n    \tChoices are: metric, imperial, si , metric-ms")
 	selectedBackend := flag.String("backend", "forecast.io", "`BACKEND` to be used")
 	flag.StringVar(selectedBackend, "b", "forecast.io", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
@@ -87,6 +87,8 @@ func main() {
 		unit = iface.UnitsImperial
 	} else if *unitSystem == "si" {
 		unit = iface.UnitsSi
+	} else if *unitSystem == "metric-ms" {
+		unit = iface.UnitsMetricMs
 	}
 
 	// get selected frontend and render the weather data with it
