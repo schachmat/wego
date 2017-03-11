@@ -68,6 +68,14 @@ go get -u github.com/schachmat/wego
 You can set the `$WEGORC` environment variable to override the default config
 file location.
 
+## Example configuration
+
+  {
+    "APIKey": "d2945e1731314c1651aeee1539547",
+    "City": "Copenhagen",
+    "Imperial": false
+  }
+
 ##Todo
 
 * more [backends and frontends](https://github.com/schachmat/wego/wiki/How-to-write-a-new-backend-or-frontend)
