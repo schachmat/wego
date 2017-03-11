@@ -114,10 +114,11 @@ const (
 	UnitsMetric UnitSystem = iota
 	UnitsImperial
 	UnitsSi
+	UnitsMetricMs
 )
 
 func (u UnitSystem) Temp(tempC float32) (res float32, unit string) {
-	if u == UnitsMetric {
+	if u == UnitsMetric || u == UnitsMetricMs {
 		return tempC, "°C"
 	} else if u == UnitsImperial {
 		return tempC*1.8 + 32, "°F"
@@ -133,7 +134,7 @@ func (u UnitSystem) Speed(spdKmph float32) (res float32, unit string) {
 		return spdKmph, "km/h"
 	} else if u == UnitsImperial {
 		return spdKmph / 1.609, "mph"
-	} else if u == UnitsSi {
+	} else if u == UnitsSi || u == UnitsMetricMs {
 		return spdKmph / 3.6, "m/s"
 	}
 	log.Fatalln("Unknown unit system:", u)
@@ -141,7 +142,7 @@ func (u UnitSystem) Speed(spdKmph float32) (res float32, unit string) {
 }
 
 func (u UnitSystem) Distance(distM float32) (res float32, unit string) {
-	if u == UnitsMetric || u == UnitsSi {
+	if u == UnitsMetric || u == UnitsSi || u == UnitsMetricMs{
 		if distM < 1 {
 			return distM * 1000, "mm"
 		} else if distM < 1000 {
