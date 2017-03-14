@@ -226,7 +226,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 	if len(c.apiKey) == 0 {
 		log.Fatal("No forecast.io API key specified.\nYou have to register for one at https://developer.forecast.io/register")
 	}
-	if matched, err := regexp.MatchString(`^-?[0-9]*(\.[0-9]+)?,-?[0-9]*(\.[0-9]+)?$`, location); !matched || err != nil {
+	if matched, err := regexp.MatchString(`^-?[0-9]*(\.[0-9]+)?,\s*-?[0-9]*(\.[0-9]+)?$`, location); !matched || err != nil {
 		log.Fatalf("Error: The forecast.io backend only supports latitude,longitude pairs as location.\nInstead of `%s` try `40.748,-73.985` for example to get a forecast for New York", location)
 	}
 
