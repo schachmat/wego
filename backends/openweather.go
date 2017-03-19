@@ -166,7 +166,7 @@ func (ow *openWeatherConfig) parseCond(dataInfo listBlock) (iface.Cond, error) {
 	}
 
 	if &dataInfo.Rain.MM3h != nil {
-		mmh := dataInfo.Rain.MM3h / 3
+		mmh := (dataInfo.Rain.MM3h / 1000) / 3
 		ret.PrecipM = &mmh
 	}
 
