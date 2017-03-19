@@ -142,7 +142,7 @@ func (u UnitSystem) Speed(spdKmph float32) (res float32, unit string) {
 }
 
 func (u UnitSystem) Distance(distM float32) (res float32, unit string) {
-	if u == UnitsMetric || u == UnitsSi || u == UnitsMetricMs{
+	if u == UnitsMetric || u == UnitsSi || u == UnitsMetricMs {
 		if distM < 1 {
 			return distM * 1000, "mm"
 		} else if distM < 1000 {

@@ -41,8 +41,8 @@ type wwoDay struct {
 		Sunrise  string
 		Sunset   string
 	}
-	Date     string
-	Hourly   []wwoCond
+	Date   string
+	Hourly []wwoCond
 }
 
 type wwoResponse struct {
