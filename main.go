@@ -47,7 +47,7 @@ func main() {
 	flag.StringVar(location, "l", "40.748,-73.985", "`LOCATION` to be queried (shorthand)")
 	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
 	flag.IntVar(numdays, "d", 3, "`NUMBER` of days of weather forecast to be displayed (shorthand)")
-	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, metric-ms, si")
+	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, metric-ms, si")	
 	flag.StringVar(unitSystem, "u", "metric", "`UNITSYSTEM` to use for output. (shorthand)\n    \tChoices are: metric, imperial, si , metric-ms")
 	selectedBackend := flag.String("backend", "forecast.io", "`BACKEND` to be used")
 	flag.StringVar(selectedBackend, "b", "forecast.io", "`BACKEND` to be used (shorthand)")
