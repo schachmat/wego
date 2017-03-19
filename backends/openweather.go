@@ -11,7 +11,7 @@ import (
 	"strings"
 	//"time"
 	"log"
-	"os"
+	//"os"
 	"time"
 )
 
@@ -72,14 +72,12 @@ type cityResponseBlock struct {
 }
 
 const (
-	// http://api.openweathermap.org/data/2.5/forecast?lat=35&lon=139&appid=ad837f4f16d346d3cf15ad700749fd3e
-	//openweatherUri = "http://api.openweathermap.org/data/2.5/forecast?lat=%s&lon=%s&appid=%s&appid=ad837f4f16d346d3cf15ad700749fd3e"
-	openweatherUri = "http://api.openweathermap.org/data/2.5/forecast?lat=%s&lon=%s&appid=%s&units=metric"
+	openweatherUri = "http://api.openweathermap.org/data/2.5/forecast?lat=%s&lon=%s&appid=%s&units=metric&lang=%s"
 )
 
 func (ow *openWeatherConfig) Setup() {
 	flag.StringVar(&ow.apiKey, "openweather-api-key", "", "openweather backend: the api `KEY` to use")
-	flag.StringVar(&ow.lang, "openweather-lang", "en", "openweather backend: the `LANGUAGE` to request from forecast.io")
+	flag.StringVar(&ow.lang, "openweather-lang", "en", "openweather backend: the `LANGUAGE` to request to openweather")
 	flag.BoolVar(&ow.debug, "openweather-debug", false, "openweather backend: print raw requests and responses")
 }
 
@@ -121,6 +119,8 @@ func (ow *openWeatherConfig) parseDaily(dataInfo []listBlock, numdays int) []ifa
 		if day == nil {
 			day = new(iface.Day)
 			day.Date = slot.Time
+		}
+		if day.Date.Day() == slot.Time.Day() {
 			day.Slots = append(day.Slots, slot)
 		}
 		if day.Date.Day() != slot.Time.Day() {
@@ -142,17 +142,24 @@ func (ow *openWeatherConfig) parseCond(dataInfo listBlock) (iface.Cond, error) {
 	codemap := map[int]iface.WeatherCode{
 		500: iface.CodeLightRain,
 		501: iface.CodeHeavyRain,
+		502: iface.CodeHeavyRain,
+		503: iface.CodeHeavyRain,
 		800: iface.CodeSunny,
 		802: iface.CodePartlyCloudy,
+		803: iface.CodePartlyCloudy,
+		804: iface.CodePartlyCloudy,
 	}
 	ret.Code = iface.CodeUnknown
 	ret.Desc = dataInfo.Weather[0].Main
 	ret.Humidity = &(dataInfo.Main.Humidity)
 	ret.TempC = &(dataInfo.Main.Temp)
-	ret.WindspeedKmph = &(dataInfo.Wind.Speed)
 	if &dataInfo.Wind.Deg != nil {
 		p := int(dataInfo.Wind.Deg)
 		ret.WinddirDegree = &p
+	}
+	if &(dataInfo.Wind.Speed) != nil && (dataInfo.Wind.Speed) > 0 {
+		windSpeed := (dataInfo.Wind.Speed * 3.6)
+		ret.WindspeedKmph = &(windSpeed)
 	}
 	if val, ok := codemap[dataInfo.Weather[0].ID]; ok {
 		ret.Code = val
@@ -174,7 +181,7 @@ func (ow *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 
 	lat, lon := s[0], s[1]
 
-	resp, err := ow.fetch(fmt.Sprintf(openweatherUri, lat, lon, ow.apiKey))
+	resp, err := ow.fetch(fmt.Sprintf(openweatherUri, lat, lon, ow.apiKey, ow.lang))
 	if err != nil {
 		log.Println("Cant fetch today")
 	}
@@ -189,6 +196,5 @@ func (ow *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 }
 
 func init() {
-	log.SetOutput(os.Stdout)
 	iface.AllBackends["openweather"] = &openWeatherConfig{}
 }
