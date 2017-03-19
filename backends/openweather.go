@@ -111,35 +111,39 @@ func (ow *openWeatherConfig) fetch(url string) (*openWeatherResponse, error) {
 func (ow *openWeatherConfig) parseDaily(dataInfo []listBlock, numdays int) []iface.Day {
 	var openWeather []iface.Day
 	var day *iface.Day
+
 	for _, data := range dataInfo {
 		slot, err := ow.parseCond(data)
 		if err != nil {
 			log.Println("Error parsing hourly weather condition:", err)
 			continue
 		}
-		if day != nil && day.Date.Day() != slot.Time.Day() {
-			if len(openWeather) >= numdays-1 {
-				break
-			}
-			openWeather = append(openWeather, *day)
-			day = nil
-		}
 		if day == nil {
 			day = new(iface.Day)
 			day.Date = slot.Time
+			day.Slots = append(day.Slots, slot)
+		}
+		if day.Date.Day() != slot.Time.Day() {
+			openWeather = append(openWeather, *day)
+			if len(openWeather) >= numdays {
+				break
+			}
+			day = new(iface.Day)
+			day.Date = slot.Time
+			day.Slots = append(day.Slots, slot)
 		}
 
-		day.Slots = append(day.Slots, slot)
 	}
-	return append(openWeather, *day)
+	return openWeather
 }
 
 func (ow *openWeatherConfig) parseCond(dataInfo listBlock) (iface.Cond, error) {
 	var ret iface.Cond
-	codemap := map[string]iface.WeatherCode{
-		"Rain":   iface.CodeLightRain,
-		"Snow":   iface.CodeLightSnow,
-		"Clouds": iface.CodeCloudy,
+	codemap := map[int]iface.WeatherCode{
+		500: iface.CodeLightRain,
+		501: iface.CodeHeavyRain,
+		800: iface.CodeSunny,
+		802: iface.CodePartlyCloudy,
 	}
 	ret.Code = iface.CodeUnknown
 	ret.Desc = dataInfo.Weather[0].Main
@@ -150,8 +154,7 @@ func (ow *openWeatherConfig) parseCond(dataInfo listBlock) (iface.Cond, error) {
 		p := int(dataInfo.Wind.Deg)
 		ret.WinddirDegree = &p
 	}
-
-	if val, ok := codemap[dataInfo.Weather[0].Main]; ok {
+	if val, ok := codemap[dataInfo.Weather[0].ID]; ok {
 		ret.Code = val
 	}
 
@@ -165,35 +168,19 @@ func (ow *openWeatherConfig) parseCond(dataInfo listBlock) (iface.Cond, error) {
 	return ret, nil
 }
 
-func (ow *openWeatherConfig) fetchToday(location string) ([]iface.Cond, error) {
-	s := strings.Split(location, ",")
-	//var ret []iface.Cond
-	lat, lon := s[0], s[1]
-	urlToFetch := fmt.Sprintf(openweatherUri, lat, lon, ow.apiKey)
-	fmt.Printf("Urk to fetch (%s)", urlToFetch)
-	resp, err := ow.fetch(urlToFetch)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch %s", urlToFetch)
-	}
-
-	parsedDay := ow.parseDaily(resp.List, 1)
-
-	return parsedDay[0].Slots, nil
-}
-
 func (ow *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
-	//todayChan := make(chan []iface.Cond)
 	s := strings.Split(location, ",")
 
 	lat, lon := s[0], s[1]
 
 	resp, err := ow.fetch(fmt.Sprintf(openweatherUri, lat, lon, ow.apiKey))
-	ret.Current, err = ow.parseCond(resp.List[0])
 	if err != nil {
 		log.Println("Cant fetch today")
 	}
-	fmt.Println(fmt.Sprintf(openweatherUri, lat, lon, ow.apiKey))
+	ret.Current, err = ow.parseCond(resp.List[0])
+	ret.Location = fmt.Sprintf("%s", resp.City.Name)
+
 	if err != nil {
 		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
