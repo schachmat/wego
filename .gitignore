@@ -3,7 +3,6 @@
 *.a
 *.so
 /wego
-.idea/*
 
 # Folders
 _obj
@@ -28,4 +27,3 @@ _testmain.go
 # vim temp files
 *~
 *.swp
-Будет удалено .idea/

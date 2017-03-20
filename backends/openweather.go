@@ -1,17 +1,14 @@
 package backends
 
 import (
-	"flag"
-	//"fmt"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/schachmat/wego/iface"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
-	//"time"
-	"log"
-	//"os"
 	"time"
 )
 
@@ -183,7 +180,7 @@ func (ow *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 
 	resp, err := ow.fetch(fmt.Sprintf(openweatherUri, lat, lon, ow.apiKey, ow.lang))
 	if err != nil {
-		log.Println("Cant fetch today")
+		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
 	ret.Current, err = ow.parseCond(resp.List[0])
 	ret.Location = fmt.Sprintf("%s", resp.City.Name)
