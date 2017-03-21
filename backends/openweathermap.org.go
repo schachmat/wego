@@ -20,8 +20,8 @@ type openWeatherConfig struct {
 }
 
 type openWeatherResponse struct {
-	Cod     string  `json:"cod"`
-	City    struct {
+	Cod  string `json:"cod"`
+	City struct {
 		Name    string `json:"name"`
 		Country string `json:"country"`
 	} `json:"city"`
