@@ -47,11 +47,19 @@ go get -u github.com/schachmat/wego
       location=40.748,-73.985
       forecast-api-key=YOUR_FORECAST.IO_API_KEY_HERE
     ```
+0. __With an [Openweathermap](https://home.openweathermap.org/) account__
+    * You can create an account and get a free API key by [signing up](https://home.openweathermap.org/users/sign_up)
+    * Update the following `.wegorc` config variables to fit your needs:
+    ```
+      backend=openweathermap
+      location=New York
+      owm-api-key=YOUR_OPENWEATHERMAP_API_KEY_HERE
+    ```
 0. __With a [Worldweatheronline](http://www.worldweatheronline.com/) account__
     * Worldweatheronline no longer gives out free API keys. [#83](https://github.com/schachmat/wego/issues/83)
     * Update the following `.wegorc` config variables to fit your needs:
     ```
-      backend=worldweatheronline.com
+      backend=worldweatheronline
       location=New York
       wwo-api-key=YOUR_WORLDWEATHERONLINE_API_KEY_HERE
     ```

@@ -248,9 +248,9 @@ func wwoUnmarshalLang(body []byte, r *wwoResponse, lang string) error {
 }
 
 func (c *wwoConfig) Setup() {
-	flag.StringVar(&c.apiKey, "wwo-api-key", "", "wwo backend: the api `KEY` to use")
-	flag.StringVar(&c.language, "wwo-lang", "en", "wwo backend: the `LANGUAGE` to request from wwo")
-	flag.BoolVar(&c.debug, "wwo-debug", false, "wwo backend: print raw requests and responses")
+	flag.StringVar(&c.apiKey, "wwo-api-key", "", "worldweatheronline backend: the api `KEY` to use")
+	flag.StringVar(&c.language, "wwo-lang", "en", "worldweatheronline backend: the `LANGUAGE` to request from worldweatheronline")
+	flag.BoolVar(&c.debug, "wwo-debug", false, "worldweatheronline backend: print raw requests and responses")
 }
 
 func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.LatLon) {
@@ -373,5 +373,5 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 }
 
 func init() {
-	iface.AllBackends["worldweatheronline.com"] = &wwoConfig{}
+	iface.AllBackends["worldweatheronline"] = &wwoConfig{}
 }
