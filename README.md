@@ -2,7 +2,7 @@
 
 ![Screenshots](http://schachmat.github.io/wego/wego.gif)
 
-##Features
+## Features
 
 * show forecast for 1 to 7 days
 * nice ASCII art icons
@@ -16,7 +16,7 @@
 * config file for default location which can be overridden by commandline
 * Automatic config management with [ingo](https://github.com/schachmat/ingo)
 
-##Dependencies
+## Dependencies
 
 * A [working](https://golang.org/doc/install#testing) [Go](https://golang.org/)
   [1.5](https://golang.org/doc/go1.5) environment (You can use
@@ -27,14 +27,14 @@
   mono`)
 * An API key for the backend (see Setup below)
 
-##Installation
+## Installation
 
 To install or update the wego binary into your `$GOPATH` as usual, run:
 ```shell
 go get -u github.com/schachmat/wego
 ```
 
-##Setup
+## Setup
 
 0. Run `wego` once. You will get an error message, but the `.wegorc` config file
    will be generated in your `$HOME` directory (it will be hidden in some file
@@ -47,11 +47,19 @@ go get -u github.com/schachmat/wego
       location=40.748,-73.985
       forecast-api-key=YOUR_FORECAST.IO_API_KEY_HERE
     ```
+0. __With an [Openweathermap](https://home.openweathermap.org/) account__
+    * You can create an account and get a free API key by [signing up](https://home.openweathermap.org/users/sign_up)
+    * Update the following `.wegorc` config variables to fit your needs:
+    ```
+      backend=openweathermap
+      location=New York
+      owm-api-key=YOUR_OPENWEATHERMAP_API_KEY_HERE
+    ```
 0. __With a [Worldweatheronline](http://www.worldweatheronline.com/) account__
     * Worldweatheronline no longer gives out free API keys. [#83](https://github.com/schachmat/wego/issues/83)
     * Update the following `.wegorc` config variables to fit your needs:
     ```
-      backend=worldweatheronline.com
+      backend=worldweatheronline
       location=New York
       wwo-api-key=YOUR_WORLDWEATHERONLINE_API_KEY_HERE
     ```
@@ -68,13 +76,13 @@ go get -u github.com/schachmat/wego
 You can set the `$WEGORC` environment variable to override the default config
 file location.
 
-##Todo
+## Todo
 
 * more [backends and frontends](https://github.com/schachmat/wego/wiki/How-to-write-a-new-backend-or-frontend)
 * resolve ALL the [issues](https://github.com/schachmat/wego/issues)
 * don't forget the [TODOs in the code](https://github.com/schachmat/wego/search?q=TODO&type=Code)
 
-##License - ISC
+## License - ISC
 
 Copyright (c) 2014-2016,  <teichm@in.tum.de>
 
