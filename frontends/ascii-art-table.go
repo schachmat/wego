@@ -21,6 +21,11 @@ type aatConfig struct {
 	unit       iface.UnitSystem
 }
 
+const (
+	nightTime   = 22
+	morningTime = 6
+)
+
 //TODO: replace s parameter with printf interface?
 func aatPad(s string, mustLen int) (ret string) {
 	ansiEsc := regexp.MustCompile("\033.*?m")
@@ -250,7 +255,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m   /\033[38;5;250m(___(__) \033[0m",
 			"             ",
 		},
-		iface.CodeSunny: {
+		iface.CodeClear: {
 			"\033[38;5;226m    \\   /    \033[0m",
 			"\033[38;5;226m     .-.     \033[0m",
 			"\033[38;5;226m  ‒ (   ) ‒  \033[0m",
@@ -285,6 +290,15 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;240;1m (___.__)__) \033[0m",
 			"             ",
 		},
+	}
+	if (cond.Time.Hour() > nightTime || cond.Time.Hour() < morningTime) && cond.Code == iface.CodeClear {
+		codes[iface.CodeClear] = []string{
+			"\033[38;5;255m  *   .--,   \033[0m",
+			"\033[38;5;255m    /   /    \033[0m",
+			"\033[38;5;255m   |   |     \033[0m",
+			"\033[38;5;255m    \\   \\  * \033[0m",
+			"\033[38;5;255m *    `--`   \033[0m",
+		}
 	}
 
 	icon, ok := codes[cond.Code]

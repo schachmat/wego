@@ -103,8 +103,8 @@ func (c *forecastConfig) parseDaily(hours, days forecastDataBlock, numdays int) 
 
 func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err error) {
 	codemap := map[string]iface.WeatherCode{
-		"clear-day":           iface.CodeSunny,
-		"clear-night":         iface.CodeSunny,
+		"clear-day":           iface.CodeClear,
+		"clear-night":         iface.CodeClear,
 		"rain":                iface.CodeLightRain,
 		"snow":                iface.CodeLightSnow,
 		"sleet":               iface.CodeLightSleet,
