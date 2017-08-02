@@ -129,7 +129,7 @@ func (c *smhiConfig) Fetch(location string, numDays int) (ret iface.Data) {
 	ret.Forecast = c.parseForecast(resp, numDays)
 	coordinates := resp.Geometry.Coordinates
 	ret.GeoLoc = &iface.LatLon{Latitude: coordinates[0][1], Longitude: coordinates[0][0]}
-	ret.Location = location
+	ret.Location = location + " (Forecast provided by SMHI)"
 	return ret
 }
 func (c *smhiConfig) parseForecast(response *smhiResponse, numDays int) (days []iface.Day) {
