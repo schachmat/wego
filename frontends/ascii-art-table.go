@@ -254,7 +254,7 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 			"\033[38;5;226m    \\   /    \033[0m",
 			"\033[38;5;226m     .-.     \033[0m",
 			"\033[38;5;226m  ‒ (   ) ‒  \033[0m",
-			"\033[38;5;226m     `-᾿     \033[0m",
+			"\033[38;5;226m     `-´     \033[0m",
 			"\033[38;5;226m    /   \\    \033[0m",
 		},
 		iface.CodeThunderyHeavyRain: {
