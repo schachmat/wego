@@ -63,6 +63,14 @@ go get -u github.com/schachmat/wego
       location=New York
       wwo-api-key=YOUR_WORLDWEATHERONLINE_API_KEY_HERE
     ```
+0. __With a [Weatherbit.io](https://www.weatherbit.io/) account__
+    * You can create an account and get a free API key by [signing up](https://www.weatherbit.io/account/create)
+    * Update the following `.wegorc` config variables to fit your needs:
+    ```
+      backend=weatherbit.io
+      location=New York
+      weatherbit-api-key=YOUR_WEATHERBIT_API_KEY_HERE
+    ```
 0. You may want to adjust other preferences like `days`, `units` and `…-lang` as
    well. Save the file.
 0. Run `wego` once again and you should get the weather forecast for the current
