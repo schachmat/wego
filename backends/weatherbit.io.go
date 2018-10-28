@@ -24,6 +24,9 @@ type weatherbitConfig struct {
 
 type weatherbitDataPoint struct {
 	Time                *string            `json:"timestamp_local"`
+	ObTime              *string            `json:"ob_time"`
+	DateTime            *string            `json:"datetime"`
+	Timezone            *string            `json:"timezone"`
 	Weather             *weatherbitWeather `json:"weather"`
 	PrecipIntensity     *float32           `json:"precip"`
 	PrecipProb          *float32           `json:"pop"`
@@ -51,8 +54,10 @@ type weatherbitResponse struct {
 }
 
 const (
-	weatherbitUriLatLon = "https://api.weatherbit.io/v2.0/forecast/3hourly?units=M&lang=%s&key=%s&lat=%s&lon=%s&days=%d"
-	weatherbitUriName   = "https://api.weatherbit.io/v2.0/forecast/3hourly?units=M&lang=%s&key=%s&city=%s&days=%d"
+	weatherbitUriCurrentLatLon = "https://api.weatherbit.io/v2.0/current?units=M&lang=%s&key=%s&lat=%s&lon=%s"
+	weatherbitUriCurrentName   = "https://api.weatherbit.io/v2.0/current?units=M&lang=%s&key=%s&city=%s"
+	weatherbitUriLatLon = "https://api.weatherbit.io/v2.0/forecast/%s?units=M&lang=%s&key=%s&lat=%s&lon=%s&days=%d"
+	weatherbitUriName   = "https://api.weatherbit.io/v2.0/forecast/%s?units=M&lang=%s&key=%s&city=%s&days=%d"
 )
 
 func (c *weatherbitConfig) parseDaily(dataInfo []weatherbitDataPoint, numdays int) []iface.Day {
@@ -152,11 +157,18 @@ func (c *weatherbitConfig) parseCond(dp weatherbitDataPoint) (ret iface.Cond, er
 		"c04n": iface.CodeVeryCloudy,
 	}
 
-	if dp.Time == nil {
+	if dp.Time == nil && dp.ObTime == nil && dp.DateTime == nil {
 		return iface.Cond{}, fmt.Errorf("The weatherbit.io response did not provide a time for the weather condition")
 	}
 
-	cDate, _ := time.Parse("2006-01-02T15:04:05", *dp.Time)
+	var cDate time.Time
+	if dp.Time != nil {
+		cDate, _ = time.Parse("2006-01-02T15:04:05", *dp.Time)
+	} else if dp.ObTime != nil {
+		cDate, _ = time.Parse("2006-01-02T15:04:05", *dp.ObTime)
+	} else {
+		cDate, _ = time.Parse("2006-01-02", *dp.DateTime)
+	}
 	ret.Time = cDate.In(c.tz)
 
 	ret.Code = iface.CodeUnknown
@@ -234,13 +246,18 @@ func (c *weatherbitConfig) fetch(url string) (*weatherbitResponse, error) {
 		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
 	}
 
-	if resp.Timezone == nil {
-		log.Printf("No timezone set in response (%s)", url)
-	} else {
+	if resp.Timezone != nil {
 		c.tz, err = time.LoadLocation(*resp.Timezone)
 		if err != nil {
 			log.Printf("Unknown Timezone used in response (%s)", url)
 		}
+	} else if resp.Data[0].Timezone != nil {
+		c.tz, err = time.LoadLocation(*resp.Data[0].Timezone)
+		if err != nil {
+			log.Printf("Unknown Timezone used in response (%s)", url)
+		}
+	} else {
+		log.Printf("No timezone set in response (%s)", url)
 	}
 	return &resp, nil
 }
@@ -254,9 +271,9 @@ func (c *weatherbitConfig) fetchToday(location string) ([]iface.Cond, error) {
 	var resp *weatherbitResponse
 	if matched {
 		locationParts := strings.Split(location, ",")
-		resp, err = c.fetch(fmt.Sprintf(weatherbitUriLatLon, c.lang, c.apiKey, locationParts[0], locationParts[1], 1))
+		resp, err = c.fetch(fmt.Sprintf(weatherbitUriCurrentLatLon, c.lang, c.apiKey, locationParts[0], locationParts[1]))
 	} else {
-		resp, err = c.fetch(fmt.Sprintf(weatherbitUriName, c.lang, c.apiKey, url.QueryEscape(location), 1))
+		resp, err = c.fetch(fmt.Sprintf(weatherbitUriCurrentName, c.lang, c.apiKey, url.QueryEscape(location)))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch todays weather data: %v\n", err)
@@ -298,12 +315,19 @@ func (c *weatherbitConfig) Fetch(location string, numdays int) iface.Data {
 		log.Fatalf("Error: Unable to parse location '%s'", location)
 	}
 
+	var forecastType string
+	if numdays > 5 {
+		forecastType = "daily"
+	} else {
+		forecastType = "3hourly"
+	}
+
 	var resp *weatherbitResponse
 	if matched {
 		locationParts := strings.Split(location, ",")
-		resp, err = c.fetch(fmt.Sprintf(weatherbitUriLatLon, c.lang, c.apiKey, locationParts[0], locationParts[1], numdays))
+		resp, err = c.fetch(fmt.Sprintf(weatherbitUriLatLon, forecastType, c.lang, c.apiKey, locationParts[0], locationParts[1], numdays))
 	} else {
-		resp, err = c.fetch(fmt.Sprintf(weatherbitUriName, c.lang, c.apiKey, url.QueryEscape(location), numdays))
+		resp, err = c.fetch(fmt.Sprintf(weatherbitUriName, forecastType, c.lang, c.apiKey, url.QueryEscape(location), numdays))
 	}
 
 	if err != nil {
