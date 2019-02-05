@@ -117,7 +117,7 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 	}
 
 	if dp.Time == nil {
-		return iface.Cond{}, fmt.Errorf("The forecast.io response did not provide a time for the weather condition")
+		return iface.Cond{}, fmt.Errorf("the forecast.io response did not provide a time for the weather condition")
 	}
 	ret.Time = time.Unix(*dp.Time, 0).In(c.tz)
 
@@ -167,15 +167,15 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 func (c *forecastConfig) fetch(url string) (*forecastResponse, error) {
 	res, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get (%s): %v", url, err)
+		return nil, fmt.Errorf("unable to get (%s): %v", url, err)
 	} else if res.StatusCode != 200 {
-		return nil, fmt.Errorf("Unable to get (%s): http status %d", url, res.StatusCode)
+		return nil, fmt.Errorf("unable to get (%s): http status %d", url, res.StatusCode)
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read response body (%s): %v", url, err)
+		return nil, fmt.Errorf("unable to read response body (%s): %v", url, err)
 	}
 
 	if c.debug {
@@ -184,7 +184,7 @@ func (c *forecastConfig) fetch(url string) (*forecastResponse, error) {
 
 	var resp forecastResponse
 	if err = json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
+		return nil, fmt.Errorf("unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
 	}
 
 	if resp.Timezone == nil {
@@ -203,12 +203,12 @@ func (c *forecastConfig) fetchToday(location string) ([]iface.Cond, error) {
 
 	resp, err := c.fetch(fmt.Sprintf(forecastWuri, c.apiKey, location, c.lang))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch todays weather data: %v\n", err)
+		return nil, fmt.Errorf("failed to fetch todays weather data: %v\n", err)
 	}
 
 	days := c.parseDaily(resp.Hourly, resp.Daily, 1)
 	if len(days) < 1 {
-		return nil, fmt.Errorf("Failed to parse today\n")
+		return nil, fmt.Errorf("failed to parse today\n")
 	}
 	return days[0].Slots, nil
 }
