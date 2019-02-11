@@ -74,11 +74,7 @@ func (c *aatConfig) formatTemp(cond iface.Cond) string {
 	t := *cond.TempC
 	if cond.FeelsLikeC != nil {
 		fl := *cond.FeelsLikeC
-		if fl < t {
-			return aatPad(fmt.Sprintf("%s – %s %s", color(fl), color(t), u), 15)
-		} else if fl > t {
-			return aatPad(fmt.Sprintf("%s – %s %s", color(t), color(fl), u), 15)
-		}
+		return aatPad(fmt.Sprintf("%s (%s) %s", color(t), color(fl), u), 15)
 	}
 	return aatPad(fmt.Sprintf("%s %s", color(t), u), 15)
 }
