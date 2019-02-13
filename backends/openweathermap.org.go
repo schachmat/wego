@@ -172,7 +172,7 @@ func (c *openWeatherConfig) parseCond(dataInfo dataBlock) (iface.Cond, error) {
 		762: iface.CodeUnknown, // volcanic ash
 		771: iface.CodeUnknown, // squalls
 		781: iface.CodeUnknown, // tornado
-		800: iface.CodeSunny,
+		800: iface.CodeClear,
 		801: iface.CodePartlyCloudy,
 		802: iface.CodeCloudy,
 		803: iface.CodeVeryCloudy,

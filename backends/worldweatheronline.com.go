@@ -81,7 +81,7 @@ func wwoParseCond(cond wwoCond, date time.Time) (ret iface.Cond) {
 	ret.ChanceOfRainPercent = cond.TmpCor
 
 	codemap := map[int]iface.WeatherCode{
-		113: iface.CodeSunny,
+		113: iface.CodeClear,
 		116: iface.CodePartlyCloudy,
 		119: iface.CodeCloudy,
 		122: iface.CodeVeryCloudy,
