@@ -52,10 +52,10 @@ type forecastResponse struct {
 }
 
 const (
-	// see https://developer.forecast.io/docs/v2
+	// see https://darksky.net/dev/docs
 	// see also https://github.com/mlbright/forecast
-	//https://api.forecast.io/forecast/APIKEY/LATITUDE,LONGITUDE
-	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,alerts,flags&extend=hourly"
+	//https://api.darksky.net/forecast/APIKEY/LATITUDE,LONGITUDE
+	forecastWuri = "https://api.darksky.net/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,alerts,flags&extend=hourly"
 )
 
 func (c *forecastConfig) parseAstro(cur *iface.Day, days []forecastDataPoint) {
@@ -149,7 +149,7 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 		ret.WindspeedKmph = dp.WindSpeed
 	}
 
-	//ret.WindGustKmph not provided by forecast.io :(
+	//ret.WindGustKmph not provided by darksky.net :(
 
 	if dp.WindBearing != nil && *dp.WindBearing >= 0 {
 		p := int(*dp.WindBearing) % 360
