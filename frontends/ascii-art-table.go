@@ -110,18 +110,26 @@ func (c *aatConfig) formatWind(cond iface.Cond) string {
 
 	_, u := c.unit.Speed(0.0)
 
+	//Diagonal arrows register as length 2, even though they're rendered with length 1
+	//So add an extra space if we'll be selecting one (odd numbered array indices)
+	final_len := 15
+	if ((*cond.WinddirDegree+22)%360)/45 % 2 == 1 {
+		final_len = 16
+	}
+	
+
 	if cond.WindspeedKmph == nil {
-		return aatPad(windDir(cond.WinddirDegree), 15)
+		return aatPad(windDir(cond.WinddirDegree), final_len)
 	}
 	s := *cond.WindspeedKmph
-
+	
 	if cond.WindGustKmph != nil {
 		if g := *cond.WindGustKmph; g > s {
-			return aatPad(fmt.Sprintf("%s %s – %s %s", windDir(cond.WinddirDegree), color(s), color(g), u), 15)
+			return aatPad(fmt.Sprintf("%s %s – %s %s", windDir(cond.WinddirDegree), color(s), color(g), u), final_len)
 		}
 	}
-
-	return aatPad(fmt.Sprintf("%s %s %s", windDir(cond.WinddirDegree), color(s), u), 15)
+	
+	return aatPad(fmt.Sprintf("%s %s %s", windDir(cond.WinddirDegree), color(s), u), final_len)
 }
 
 func (c *aatConfig) formatVisibility(cond iface.Cond) string {
