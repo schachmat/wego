@@ -13,14 +13,14 @@ import (
 	"github.com/schachmat/wego/iface"
 )
 
-type forecastConfig struct {
+type darkSkyConfig struct {
 	apiKey string
 	lang   string
 	debug  bool
 	tz     *time.Location
 }
 
-type forecastDataPoint struct {
+type darkSkyDataPoint struct {
 	Time                *int64   `json:"time"`
 	Summary             string   `json:"summary"`
 	Icon                string   `json:"icon"`
@@ -36,29 +36,29 @@ type forecastDataPoint struct {
 	Humidity            *float32 `json:"humidity"`
 }
 
-type forecastDataBlock struct {
-	Summary string              `json:"summary"`
-	Icon    string              `json:"icon"`
-	Data    []forecastDataPoint `json:"data"`
+type darkSkyDataBlock struct {
+	Summary string             `json:"summary"`
+	Icon    string             `json:"icon"`
+	Data    []darkSkyDataPoint `json:"data"`
 }
 
-type forecastResponse struct {
-	Latitude  *float32          `json:"latitude"`
-	Longitude *float32          `json:"longitude"`
-	Timezone  *string           `json:"timezone"`
-	Currently forecastDataPoint `json:"currently"`
-	Hourly    forecastDataBlock `json:"hourly"`
-	Daily     forecastDataBlock `json:"daily"`
+type darkSkyResponse struct {
+	Latitude  *float32         `json:"latitude"`
+	Longitude *float32         `json:"longitude"`
+	Timezone  *string          `json:"timezone"`
+	Currently darkSkyDataPoint `json:"currently"`
+	Hourly    darkSkyDataBlock `json:"hourly"`
+	Daily     darkSkyDataBlock `json:"daily"`
 }
 
 const (
-	// see https://developer.forecast.io/docs/v2
+	// see https://darksky.net/dev/docs
 	// see also https://github.com/mlbright/forecast
-	//https://api.forecast.io/forecast/APIKEY/LATITUDE,LONGITUDE
-	forecastWuri = "https://api.forecast.io/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,alerts,flags&extend=hourly"
+	//https://api.darksky.net/forecast/<APIKEY>/<LATITUDE>,<LONGITUDE>
+	darkSkyWuri = "https://api.darksky.net/forecast/%s/%s?units=ca&lang=%s&exclude=minutely,alerts,flags&extend=hourly"
 )
 
-func (c *forecastConfig) parseAstro(cur *iface.Day, days []forecastDataPoint) {
+func (c *darkSkyConfig) parseAstro(cur *iface.Day, days []darkSkyDataPoint) {
 	for _, day := range days {
 		if day.Time != nil && cur.Date.Day() == time.Unix(*day.Time, 0).In(c.tz).Day() {
 			if day.SunriseTime != nil {
@@ -72,7 +72,7 @@ func (c *forecastConfig) parseAstro(cur *iface.Day, days []forecastDataPoint) {
 	}
 }
 
-func (c *forecastConfig) parseDaily(hours, days forecastDataBlock, numdays int) []iface.Day {
+func (c *darkSkyConfig) parseDaily(hours, days darkSkyDataBlock, numdays int) []iface.Day {
 	var forecast []iface.Day
 	var day *iface.Day
 
@@ -101,7 +101,7 @@ func (c *forecastConfig) parseDaily(hours, days forecastDataBlock, numdays int) 
 	return append(forecast, *day)
 }
 
-func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err error) {
+func (c *darkSkyConfig) parseCond(dp darkSkyDataPoint) (ret iface.Cond, err error) {
 	codemap := map[string]iface.WeatherCode{
 		"clear-day":           iface.CodeSunny,
 		"clear-night":         iface.CodeSunny,
@@ -164,7 +164,7 @@ func (c *forecastConfig) parseCond(dp forecastDataPoint) (ret iface.Cond, err er
 	return ret, nil
 }
 
-func (c *forecastConfig) fetch(url string) (*forecastResponse, error) {
+func (c *darkSkyConfig) fetch(url string) (*darkSkyResponse, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get (%s): %v", url, err)
@@ -182,7 +182,7 @@ func (c *forecastConfig) fetch(url string) (*forecastResponse, error) {
 		log.Printf("Response (%s): %s\n", url, string(body))
 	}
 
-	var resp forecastResponse
+	var resp darkSkyResponse
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
 	}
@@ -198,10 +198,10 @@ func (c *forecastConfig) fetch(url string) (*forecastResponse, error) {
 	return &resp, nil
 }
 
-func (c *forecastConfig) fetchToday(location string) ([]iface.Cond, error) {
+func (c *darkSkyConfig) fetchToday(location string) ([]iface.Cond, error) {
 	location = fmt.Sprintf("%s,%d", location, time.Now().Unix())
 
-	resp, err := c.fetch(fmt.Sprintf(forecastWuri, c.apiKey, location, c.lang))
+	resp, err := c.fetch(fmt.Sprintf(darkSkyWuri, c.apiKey, location, c.lang))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch todays weather data: %v\n", err)
 	}
@@ -213,21 +213,21 @@ func (c *forecastConfig) fetchToday(location string) ([]iface.Cond, error) {
 	return days[0].Slots, nil
 }
 
-func (c *forecastConfig) Setup() {
-	flag.StringVar(&c.apiKey, "forecast-api-key", "", "forecast backend: the api `KEY` to use")
-	flag.StringVar(&c.lang, "forecast-lang", "en", "forecast backend: the `LANGUAGE` to request from forecast.io")
-	flag.BoolVar(&c.debug, "forecast-debug", false, "forecast backend: print raw requests and responses")
+func (c *darkSkyConfig) Setup() {
+	flag.StringVar(&c.apiKey, "darksky-api-key", "", "darksky backend: the api `KEY` to use")
+	flag.StringVar(&c.lang, "darksky-lang", "en", "darksky backend: the `LANGUAGE` to request from Dark Sky")
+	flag.BoolVar(&c.debug, "darksky-debug", false, "darksky backend: print raw requests and responses")
 }
 
-func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
+func (c *darkSkyConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
 	todayChan := make(chan []iface.Cond)
 
 	if len(c.apiKey) == 0 {
-		log.Fatal("No forecast.io API key specified.\nYou have to register for one at https://developer.forecast.io/register")
+		log.Fatal("No Dark Sky API key specified.\nYou have to register for one at https://darksky.net/dev")
 	}
 	if matched, err := regexp.MatchString(`^-?[0-9]*(\.[0-9]+)?,-?[0-9]*(\.[0-9]+)?$`, location); !matched || err != nil {
-		log.Fatalf("Error: The forecast.io backend only supports latitude,longitude pairs as location.\nInstead of `%s` try `40.748,-73.985` for example to get a forecast for New York", location)
+		log.Fatalf("Error: The Dark Sky backend only supports latitude,longitude pairs as location.\nInstead of `%s` try `40.748,-73.985` for example to get a forecast for New York", location)
 	}
 
 	c.tz = time.Local
@@ -240,7 +240,7 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 		todayChan <- slots
 	}()
 
-	resp, err := c.fetch(fmt.Sprintf(forecastWuri, c.apiKey, location, c.lang))
+	resp, err := c.fetch(fmt.Sprintf(darkSkyWuri, c.apiKey, location, c.lang))
 	if err != nil {
 		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
@@ -287,5 +287,5 @@ func (c *forecastConfig) Fetch(location string, numdays int) iface.Data {
 }
 
 func init() {
-	iface.AllBackends["forecast.io"] = &forecastConfig{}
+	iface.AllBackends["darksky"] = &darkSkyConfig{}
 }
