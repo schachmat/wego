@@ -48,8 +48,8 @@ func main() {
 	flag.IntVar(numdays, "d", 3, "`NUMBER` of days of weather forecast to be displayed (shorthand)")
 	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si, metric-ms")
 	flag.StringVar(unitSystem, "u", "metric", "`UNITSYSTEM` to use for output. (shorthand)\n    \tChoices are: metric, imperial, si, metric-ms")
-	selectedBackend := flag.String("backend", "forecast.io", "`BACKEND` to be used")
-	flag.StringVar(selectedBackend, "b", "forecast.io", "`BACKEND` to be used (shorthand)")
+	selectedBackend := flag.String("backend", "darksky", "`BACKEND` to be used")
+	flag.StringVar(selectedBackend, "b", "darksky", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
 
