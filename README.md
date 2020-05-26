@@ -40,7 +40,8 @@ go get -u github.com/schachmat/wego
    will be generated in your `$HOME` directory (it will be hidden in some file
    managers due to the filename starting with a dot).
 0. __With a [forecast.io](http://forecast.io/) account__ (new default)
-    * Create your account on https://developer.forecast.io/register
+    * ~Create your account on https://developer.forecast.io/register~
+    * Note: No new signups as of March 31st, 2020: [https://blog.darksky.net/](http://web.archive.org/web/20200515224217/https://blog.darksky.net/)
     * Update the following `.wegorc` config variables to fit your needs:
     ```
       backend=forecast.io
