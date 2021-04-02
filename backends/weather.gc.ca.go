@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/schachmat/wego/iface"
@@ -118,50 +118,7 @@ type canadianResponse struct {
 			TimeStamp   string `xml:"timeStamp"`
 			TextSummary string `xml:"textSummary"`
 		} `xml:"dateTime"`
-		HourlyForecast []struct {
-			Text        string `xml:",chardata"`
-			DateTimeUTC string `xml:"dateTimeUTC,attr"`
-			Condition   string `xml:"condition"`
-			IconCode    struct {
-				Text   string `xml:",chardata"`
-				Format string `xml:"format,attr"`
-			} `xml:"iconCode"`
-			Temperature struct {
-				Text     string `xml:",chardata"`
-				UnitType string `xml:"unitType,attr"`
-				Units    string `xml:"units,attr"`
-			} `xml:"temperature"`
-			Lop struct {
-				Text     string `xml:",chardata"`
-				Category string `xml:"category,attr"`
-				Units    string `xml:"units,attr"`
-			} `xml:"lop"`
-			WindChill struct {
-				Text     string `xml:",chardata"`
-				UnitType string `xml:"unitType,attr"`
-			} `xml:"windChill"`
-			Humidex struct {
-				Text     string `xml:",chardata"`
-				UnitType string `xml:"unitType,attr"`
-			} `xml:"humidex"`
-			Wind struct {
-				Text  string `xml:",chardata"`
-				Speed struct {
-					Text     string `xml:",chardata"`
-					UnitType string `xml:"unitType,attr"`
-					Units    string `xml:"units,attr"`
-				} `xml:"speed"`
-				Direction struct {
-					Text        string `xml:",chardata"`
-					WindDirFull string `xml:"windDirFull,attr"`
-				} `xml:"direction"`
-				Gust struct {
-					Text     string `xml:",chardata"`
-					UnitType string `xml:"unitType,attr"`
-					Units    string `xml:"units,attr"`
-				} `xml:"gust"`
-			} `xml:"wind"`
-		} `xml:"hourlyForecast"`
+		HourlyForecast []HourlyForecast `xml:"hourlyForecast"`
 	} `xml:"hourlyForecastGroup"`
 	YesterdayConditions struct {
 		Text        string `xml:",chardata"`
@@ -396,6 +353,51 @@ type Forecast struct {
 	} `xml:"relativeHumidity"`
 }
 
+type HourlyForecast struct {
+	Text        string `xml:",chardata"`
+	DateTimeUTC string `xml:"dateTimeUTC,attr"`
+	Condition   string `xml:"condition"`
+	IconCode    struct {
+		Text   string `xml:",chardata"`
+		Format string `xml:"format,attr"`
+	} `xml:"iconCode"`
+	Temperature struct {
+		Value    float32 `xml:",chardata"`
+		UnitType string  `xml:"unitType,attr"`
+		Units    string  `xml:"units,attr"`
+	} `xml:"temperature"`
+	Lop struct {
+		Text     string `xml:",chardata"`
+		Category string `xml:"category,attr"`
+		Units    string `xml:"units,attr"`
+	} `xml:"lop"`
+	WindChill struct {
+		Text     string `xml:",chardata"`
+		UnitType string `xml:"unitType,attr"`
+	} `xml:"windChill"`
+	Humidex struct {
+		Text     string `xml:",chardata"`
+		UnitType string `xml:"unitType,attr"`
+	} `xml:"humidex"`
+	Wind struct {
+		Text  string `xml:",chardata"`
+		Speed struct {
+			Text     string `xml:",chardata"`
+			UnitType string `xml:"unitType,attr"`
+			Units    string `xml:"units,attr"`
+		} `xml:"speed"`
+		Direction struct {
+			Text        string `xml:",chardata"`
+			WindDirFull string `xml:"windDirFull,attr"`
+		} `xml:"direction"`
+		Gust struct {
+			Text     string `xml:",chardata"`
+			UnitType string `xml:"unitType,attr"`
+			Units    string `xml:"units,attr"`
+		} `xml:"gust"`
+	} `xml:"wind"`
+}
+
 func (c *canadianWeatherConfig) fetch(url string) (*canadianResponse, error) {
 	res, err := http.Get(url)
 	if c.debug {
@@ -431,41 +433,52 @@ func (c *canadianWeatherConfig) Setup() {
 }
 
 func (c *canadianWeatherConfig) parseDailyForecast(data canadianResponse, numdays int) []iface.Day {
-	var forecasts []iface.Day
+	var forecasts []*iface.Day
+	var currDay *iface.Day
 
-	dateTime := data.ForecastGroup.DateTime[0]
-	startTime := time.Date(dateTime.Year, time.Month(dateTime.Month.Value), dateTime.Day.Value, dateTime.Hour, dateTime.Minute, 0, 0, time.UTC)
+	for _, datum := range data.HourlyForecastGroup.HourlyForecast {
+		if len(forecasts) >= numdays {
+			break
+		}
 
-	for _, datum := range data.ForecastGroup.Forecast {
 		slot := new(iface.Cond)
 
 		slot.Code = iface.CodeUnknown
-		slot.Desc = datum.TextSummary
-		slot.TempC = &datum.Temperatures.Temperature.Value
+		slot.Desc = datum.Condition
+		slot.TempC = &datum.Temperature.Value
 
-		newDate := startTime
-		for i := 0; i < len(forecasts); i++ {
-			newDate = newDate.Add(time.Hour * 24)
+		year, _ := strconv.ParseInt(datum.DateTimeUTC[0:4], 10, 32)
+		month, _ := strconv.ParseInt(datum.DateTimeUTC[4:6], 10, 32)
+		day, _ := strconv.ParseInt(datum.DateTimeUTC[6:8], 10, 32)
+		hour, _ := strconv.ParseInt(datum.DateTimeUTC[8:10], 10, 32)
+		minute, _ := strconv.ParseInt(datum.DateTimeUTC[10:12], 10, 32)
+
+		newTime := time.Date(int(year), time.Month(month), int(day), int(hour), int(minute), 0, 0, time.UTC)
+
+		slot.Time = newTime
+
+		if currDay == nil {
+			currDay = new(iface.Day)
+			currDay.Date = slot.Time
+			forecasts = append(forecasts, currDay)
 		}
 
-		slot.Time = newDate
-
-		if len(strings.Split(datum.Period.Text, " ")) == 1 || len(forecasts) == 0 {
-			if len(forecasts) >= numdays {
-				break
-			}
-
-			day := new(iface.Day)
-
-			day.Date = newDate
-
-			forecasts = append(forecasts, *day)
+		if currDay.Date.Day() != slot.Time.Day() {
+			currDay = new(iface.Day)
+			currDay.Date = slot.Time
+			forecasts = append(forecasts, currDay)
 		}
 
-		forecasts[len(forecasts)-1].Slots = append(forecasts[len(forecasts)-1].Slots, *slot)
+		currDay.Slots = append(currDay.Slots, *slot)
 	}
 
-	return forecasts
+	var ret []iface.Day
+
+	for _, day := range forecasts {
+		ret = append(ret, *day)
+	}
+
+	return ret
 }
 
 func (c *canadianWeatherConfig) Fetch(location string, numdays int) iface.Data {
