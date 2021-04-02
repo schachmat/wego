@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/schachmat/wego/iface"
 	"golang.org/x/net/html/charset"
@@ -428,6 +430,44 @@ func (c *canadianWeatherConfig) fetch(url string) (*canadianResponse, error) {
 func (c *canadianWeatherConfig) Setup() {
 }
 
+func (c *canadianWeatherConfig) parseDailyForecast(data canadianResponse, numdays int) []iface.Day {
+	var forecasts []iface.Day
+
+	dateTime := data.ForecastGroup.DateTime[0]
+	startTime := time.Date(dateTime.Year, time.Month(dateTime.Month.Value), dateTime.Day.Value, dateTime.Hour, dateTime.Minute, 0, 0, time.UTC)
+
+	for _, datum := range data.ForecastGroup.Forecast {
+		slot := new(iface.Cond)
+
+		slot.Code = iface.CodeUnknown
+		slot.Desc = datum.TextSummary
+		slot.TempC = &datum.Temperatures.Temperature.Value
+
+		newDate := startTime
+		for i := 0; i < len(forecasts); i++ {
+			newDate = newDate.Add(time.Hour * 24)
+		}
+
+		slot.Time = newDate
+
+		if len(strings.Split(datum.Period.Text, " ")) == 1 || len(forecasts) == 0 {
+			if len(forecasts) >= numdays {
+				break
+			}
+
+			day := new(iface.Day)
+
+			day.Date = newDate
+
+			forecasts = append(forecasts, *day)
+		}
+
+		forecasts[len(forecasts)-1].Slots = append(forecasts[len(forecasts)-1].Slots, *slot)
+	}
+
+	return forecasts
+}
+
 func (c *canadianWeatherConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
 
@@ -439,6 +479,11 @@ func (c *canadianWeatherConfig) Fetch(location string, numdays int) iface.Data {
 	ret.Current.Code = iface.CodeUnknown
 	ret.Current.Desc = resp.CurrentConditions.Condition
 	ret.Current.TempC = &resp.CurrentConditions.Temperature.Value
+
+	dateTime := resp.ForecastGroup.DateTime[0]
+	ret.Current.Time = time.Date(dateTime.Year, time.Month(dateTime.Month.Value), dateTime.Day.Value, dateTime.Hour, dateTime.Minute, 0, 0, time.UTC)
+
+	ret.Forecast = c.parseDailyForecast(*resp, numdays)
 
 	return ret
 }
