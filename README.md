@@ -19,11 +19,9 @@
 ## Dependencies
 
 * A [working](https://golang.org/doc/install#testing) [Go](https://golang.org/)
-  [1.5](https://golang.org/doc/go1.5) environment (You can use
-  [goenv](https://github.com/pwoolcoc/goenv) if your distribution does not
-  support Go 1.5 yet)
+  [1.17](https://golang.org/doc/go1.17) environment 
 * utf-8 terminal with 256 colors
-* A sane monospaced font containing all the required runes (I use `dejavu sans
+* A monospaced font containing all the required runes (I use `dejavu sans
   mono`)
 * An API key for the backend (see Setup below)
 
