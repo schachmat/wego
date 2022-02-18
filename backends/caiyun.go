@@ -34,7 +34,6 @@ func (c *CaiyunConfig) Setup() {
 var SkyconToIfaceCode map[string]iface.WeatherCode
 
 func init() {
-	//SkyconToIfaceCode["CLEAR_DAY"] = iface.CodeSunny
 	SkyconToIfaceCode = map[string]iface.WeatherCode{
 		"CLEAR_DAY":           iface.CodeSunny,
 		"CLEAR_NIGHT":         iface.CodeSunny,
