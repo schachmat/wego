@@ -27,7 +27,11 @@
 
 ## Installation
 
-To install or update the wego binary into your `$GOPATH` as usual, run:
+Check your distribution for packaging:
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/wego.svg)](https://repology.org/project/wego/versions)
+
+To directly install or update the wego binary from Github into your `$GOPATH` as usual, run:
 ```shell
 go get -u github.com/schachmat/wego
 ```
@@ -37,15 +41,6 @@ go get -u github.com/schachmat/wego
 0. Run `wego` once. You will get an error message, but the `.wegorc` config file
    will be generated in your `$HOME` directory (it will be hidden in some file
    managers due to the filename starting with a dot).
-0. __With a [forecast.io](http://forecast.io/) account__ (new default)
-    * ~Create your account on https://developer.forecast.io/register~
-    * Note: No new signups as of March 31st, 2020: [https://blog.darksky.net/](http://web.archive.org/web/20200515224217/https://blog.darksky.net/)
-    * Update the following `.wegorc` config variables to fit your needs:
-    ```
-      backend=forecast.io
-      location=40.748,-73.985
-      forecast-api-key=YOUR_FORECAST.IO_API_KEY_HERE
-    ```
 0. __With an [Openweathermap](https://home.openweathermap.org/) account__
     * You can create an account and get a free API key by [signing up](https://home.openweathermap.org/users/sign_up)
     * Update the following `.wegorc` config variables to fit your needs:
