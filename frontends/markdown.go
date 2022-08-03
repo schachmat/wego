@@ -39,6 +39,10 @@ func mdPad(s string, mustLen int) (ret string) {
 
 func (c *mdConfig) formatTemp(cond iface.Cond) string {
 
+	cvtUnits := func (temp float32) string {
+		t, _ := c.unit.Temp(temp)
+		return fmt.Sprintf("%d", int(t))
+	}
 	_, u := c.unit.Temp(0.0)
 
 	if cond.TempC == nil {
@@ -48,9 +52,9 @@ func (c *mdConfig) formatTemp(cond iface.Cond) string {
 	t := *cond.TempC
 	if cond.FeelsLikeC != nil {
 		fl := *cond.FeelsLikeC
-		return mdPad(fmt.Sprintf("%.1f (%.1f) %s", t, fl, u), 15)
+		return mdPad(fmt.Sprintf("%s (%s) %s", cvtUnits(t), cvtUnits(fl), u), 15)
 	}
-	return mdPad(fmt.Sprintf("%.1f %s", t, u), 15)
+	return mdPad(fmt.Sprintf("%s %s", cvtUnits(t), u), 15)
 }
 
 func (c *mdConfig) formatWind(cond iface.Cond) string {
@@ -134,7 +138,7 @@ func (c *mdConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret 
 
 	desc := cond.Desc
 	if !current {
-		desc = runewidth.Truncate(runewidth.FillRight(desc, 29), 29, "…")
+		desc = runewidth.Truncate(runewidth.FillRight(desc, 25), 25, "…")
 	}
 
 	ret = append(ret, fmt.Sprintf("%v %v %v", cur[0], "", desc))
@@ -194,8 +198,8 @@ func (c *mdConfig) printDay(day iface.Day) (ret []string) {
 	dateFmt := day.Date.Format("Mon Jan 02")
 	ret = append([]string{
 		"\n### Forecast for "+dateFmt+ "\n",
-		"| Morning                       | Noon                          | Evening                       | Night                         |",
-		"| ----------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |"},
+		"| Morning                   | Noon                      | Evening                   | Night                     |",
+		"| ------------------------- | ------------------------- | ------------------------- | ------------------------- |"},
 		ret...)
 	return ret
 }
