@@ -1,6 +1,6 @@
 module github.com/schachmat/wego
 
-go 1.17
+go 1.20
 
 require (
 	github.com/mattn/go-colorable v0.1.13
