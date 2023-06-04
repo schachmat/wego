@@ -225,52 +225,34 @@ func (c *openWeatherConfig) parseCond(dataInfo dataBlock) (iface.Cond, error) {
 	return ret, nil
 }
 
-func (c *openWeatherConfig) Fetch(location string, numDays int) iface.Data {
-	if len(c.apiKey) == 0 {
-		log.Fatal("No openweathermap.org API key specified. You have to register for one at https://home.openweathermap.org/users/sign_up")
-	}
+func (c *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
+	var ret iface.Data
+	loc := ""
 
-	loc, err := getLocationString(location)
-	if err != nil {
-		log.Fatalf("Failed to determine location string: %v", err)
+	if len(c.apiKey) == 0 {
+		log.Fatal("No openweathermap.org API key specified.\nYou have to register for one at https://home.openweathermap.org/users/sign_up")
+	}
+	if matched, err := regexp.MatchString(`^-?[0-9]*(\.[0-9]+)?,-?[0-9]*(\.[0-9]+)?$`, location); matched && err == nil {
+		s := strings.Split(location, ",")
+		loc = fmt.Sprintf("lat=%s&lon=%s", s[0], s[1])
+	} else if matched, err = regexp.MatchString(`^[0-9].*`, location); matched && err == nil {
+		loc = "zip=" + location
+	} else {
+		loc = "q=" + location
 	}
 
 	resp, err := c.fetch(fmt.Sprintf(openweatherURI, loc, c.apiKey, c.lang))
 	if err != nil {
-		log.Fatalf("Failed to fetch weather data: %v", err)
+		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
+	ret.Current, err = c.parseCond(resp.List[0])
+	ret.Location = fmt.Sprintf("%s, %s", resp.City.Name, resp.City.Country)
 
-	current, err := c.parseCurrent(resp.List[0])
 	if err != nil {
-		log.Fatalf("Failed to parse current weather data: %v", err)
+		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
-
-	forecast := c.parseForecast(resp.List, numDays)
-
-	return iface.Data{
-		Current:  current,
-		Forecast: forecast,
-		Location: fmt.Sprintf("%s, %s", resp.City.Name, resp.City.Country),
-	}
-}
-
-func getLocationString(location string) (string, error) {
-	if matched, err := regexp.MatchString(`^-?[0-9]*(\.[0-9]+)?,-?[0-9]*(\.[0-9]+)?$`, location); matched && err == nil {
-		s := strings.Split(location, ",")
-		return fmt.Sprintf("lat=%s&lon=%s", s[0], s[1]), nil
-	}
-	if matched, err := regexp.MatchString(`^[0-9].*`, location); matched && err == nil {
-		return "zip=" + location, nil
-	}
-	return "q=" + location, nil
-}
-
-func (c *openWeatherConfig) parseCurrent(weather openweather.Weather) (iface.CurrentWeather, error) {
-	return c.parseCond(weather)
-}
-
-func (c *openWeatherConfig) parseForecast(list []openweather.Weather, numDays int) []iface.DailyForecast {
-	return c.parseDaily(list, numDays)
+	ret.Forecast = c.parseDaily(resp.List, numdays)
+	return ret
 }
 
 func init() {
