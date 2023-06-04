@@ -63,9 +63,7 @@ go install github.com/schachmat/wego@latest
    and next few days for your chosen location.
 0. If you're visiting someone in e.g. London over the weekend, just run `wego 4
    London` or `wego London 4` (the ordering of arguments makes no difference) to
-   get the forecast for the current and the next 3 days. Unfortunately that does
-   not currently work with the forecast.io backend, as it only supports
-   latitude,longitude location specification.
+   get the forecast for the current and the next 3 days.
 
 You can set the `$WEGORC` environment variable to override the default config
 file location.
