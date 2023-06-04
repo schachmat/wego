@@ -28,3 +28,6 @@ _testmain.go
 # vim temp files
 *~
 *.swp
+
+# go modules
+vendor
