@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/schachmat/wego/iface"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -70,7 +70,7 @@ func (c *openWeatherConfig) fetch(url string) (*openWeatherResponse, error) {
 		return nil, fmt.Errorf(" Unable to get (%s) %v", url, err)
 	}
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read response body (%s): %v", url, err)
 	}

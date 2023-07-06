@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -268,7 +268,7 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 	}
 	defer hres.Body.Close()
 
-	body, err := ioutil.ReadAll(hres.Body)
+	body, err := io.ReadAll(hres.Body)
 	if err != nil {
 		log.Println("Unable to read geo location data:", err)
 		res <- nil
@@ -329,7 +329,7 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
