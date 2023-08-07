@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/schachmat/wego/iface"
 )
 
 type openWeatherConfig struct {
@@ -31,9 +33,9 @@ type openWeatherResponse struct {
 type dataBlock struct {
 	Dt   int64 `json:"dt"`
 	Main struct {
-		TempMin  float32 `json:"temp_min"`
-		TempMax  float32 `json:"temp_max"`
-		Humidity int     `json:"humidity"`
+		TempC      float32 `json:"temp"`
+		FeelsLikeC float32 `json:"feels_like"`
+		Humidity   int     `json:"humidity"`
 	} `json:"main"`
 
 	Weather []struct {
@@ -201,8 +203,8 @@ func (c *openWeatherConfig) parseCond(dataInfo dataBlock) (iface.Cond, error) {
 	ret.Code = iface.CodeUnknown
 	ret.Desc = dataInfo.Weather[0].Description
 	ret.Humidity = &(dataInfo.Main.Humidity)
-	ret.TempC = &(dataInfo.Main.TempMin)
-	ret.FeelsLikeC = &(dataInfo.Main.TempMax)
+	ret.TempC = &(dataInfo.Main.TempC)
+	ret.FeelsLikeC = &(dataInfo.Main.FeelsLikeC)
 	if &dataInfo.Wind.Deg != nil {
 		p := int(dataInfo.Wind.Deg)
 		ret.WinddirDegree = &p
