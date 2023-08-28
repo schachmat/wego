@@ -1,4 +1,10 @@
-**wego** is a weather client for the terminal.
+**wedash** is a fork of the popular weather CLI app, **wego**. 
+
+Note that this fork is currently a WIP and mostly identical to **wego** for now. The changes planned are described in the following paragraph. 
+
+**wedash** is meant to primarily operate in dashboard mode. It runs and updates indefinitely on a terminal window until the user quits it. It is handy to run on a terminal window or a pane in a multiplexer program like tmux.
+
+
 
 ![Screenshots](http://schachmat.github.io/wego/wego.gif)
 
