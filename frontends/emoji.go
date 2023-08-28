@@ -8,7 +8,7 @@ import (
 
 	colorable "github.com/mattn/go-colorable"
 	runewidth "github.com/mattn/go-runewidth"
-	"github.com/schachmat/wego/iface"
+	"github.com/meatcoder/wedash/iface"
 )
 
 type emojiConfig struct {

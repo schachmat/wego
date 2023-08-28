@@ -31,3 +31,9 @@ _testmain.go
 
 # go modules
 vendor
+
+# nix related stuff
+/gomod2nix-template
+/result
+/.direnv
+

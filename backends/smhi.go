@@ -3,7 +3,7 @@ package backends
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/schachmat/wego/iface"
+	"github.com/meatcoder/wedash/iface"
 	"io/ioutil"
 	"log"
 	"net/http"

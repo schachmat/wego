@@ -1,0 +1,21 @@
+schema = 3
+
+[mod]
+  [mod."github.com/mattn/go-colorable"]
+    version = "v0.1.13"
+    hash = "sha256-qb3Qbo0CELGRIzvw7NVM1g/aayaz4Tguppk9MD2/OI8="
+  [mod."github.com/mattn/go-isatty"]
+    version = "v0.0.19"
+    hash = "sha256-wYQqGxeqV3Elkmn26Md8mKZ/viw598R4Ych3vtt72YE="
+  [mod."github.com/mattn/go-runewidth"]
+    version = "v0.0.14"
+    hash = "sha256-O3QdxqAcJgQ+HL1v8oBA4iKBwJ2AlDN+F464027hWMU="
+  [mod."github.com/rivo/uniseg"]
+    version = "v0.4.4"
+    hash = "sha256-B8tbL9K6ICLdm0lEhs9+h4cpjAfvFtNiFMGvQZmw0bM="
+  [mod."github.com/schachmat/ingo"]
+    version = "v0.0.0-20170403011506-a4bdc0729a3f"
+    hash = "sha256-ibTXtNQfSL4m94C5u8082CfHDIoW6xqPIQPK41ubgL8="
+  [mod."golang.org/x/sys"]
+    version = "v0.8.0"
+    hash = "sha256-wLPPnoFkHM1HPUaFIfRyQZOJjrqXVZimB0nMySly7Xg="

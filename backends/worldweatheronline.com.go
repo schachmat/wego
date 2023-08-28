@@ -16,7 +16,7 @@ import (
 	// v1.4.2 or later is in debian stable and the latest Ubuntu LTS release.
 	_ "crypto/sha512"
 
-	"github.com/schachmat/wego/iface"
+	"github.com/meatcoder/wedash/iface"
 )
 
 type wwoCond struct {

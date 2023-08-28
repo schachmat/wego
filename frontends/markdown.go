@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
-	"github.com/schachmat/wego/iface"
+	"github.com/meatcoder/wedash/iface"
 )
 
 type mdConfig struct {

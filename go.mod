@@ -1,4 +1,4 @@
-module github.com/schachmat/wego
+module github.com/meatcoder/wedash
 
 go 1.20
 
