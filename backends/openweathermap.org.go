@@ -251,6 +251,10 @@ func (c *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 	if err != nil {
 		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
+
+	if numdays == 0 {
+		return ret
+	}
 	ret.Forecast = c.parseDaily(resp.List, numdays)
 	return ret
 }
