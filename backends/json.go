@@ -2,7 +2,7 @@ package backends
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"log"
 
 	"github.com/schachmat/wego/iface"
@@ -19,7 +19,7 @@ func (c *jsnConfig) Setup() {
 // to further limit the amount of days in the output. It obviously cannot
 // produce more data than is available in the file.
 func (c *jsnConfig) Fetch(loc string, numdays int) (ret iface.Data) {
-	b, err := ioutil.ReadFile(loc)
+	b, err := os.ReadFile(loc)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/schachmat/wego/iface"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -89,7 +89,7 @@ func (c *smhiConfig) fetch(url string) (*smhiResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get (%s): %v", url, err)
 	} else if resp.StatusCode != 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		quip := ""
 		if string(body) == "Requested point is out of bounds" {
 			quip = "\nPlease note that SMHI only service the nordic countries."
@@ -98,7 +98,7 @@ func (c *smhiConfig) fetch(url string) (*smhiResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read response body (%s): %v", url, err)
 	}
