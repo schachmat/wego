@@ -26,6 +26,10 @@ type openWeatherResponse struct {
 	City struct {
 		Name    string `json:"name"`
 		Country string `json:"country"`
+		TimeZone int64 `json: "timezone"`
+		// sunrise/sunset are once per call
+		SunRise int64 `json: "sunrise"`
+		SunSet int64 `json: "sunset"`
 	} `json:"city"`
 	List []dataBlock `json:"list"`
 }
@@ -254,6 +258,14 @@ func (c *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
 	ret.Forecast = c.parseDaily(resp.List, numdays)
+
+	// add in the sunrise/sunset information to the first day
+	// these maybe should deal with resp.City.TimeZone
+	if len(ret.Forecast) > 0 {
+		ret.Forecast[0].Astronomy.Sunrise = time.Unix(resp.City.SunRise, 0)
+		ret.Forecast[0].Astronomy.Sunset = time.Unix(resp.City.SunSet, 0)
+	}
+
 	return ret
 }
 
