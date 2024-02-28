@@ -11,8 +11,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/schachmat/wego/iface"
 )
 
 type openWeatherConfig struct {
