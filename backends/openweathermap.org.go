@@ -24,6 +24,10 @@ type openWeatherResponse struct {
 	City struct {
 		Name    string `json:"name"`
 		Country string `json:"country"`
+		TimeZone int64 `json: "timezone"`
+		// sunrise/sunset are once per call
+		SunRise int64 `json: "sunrise"`
+		SunSet int64 `json: "sunset"`
 	} `json:"city"`
 	List []dataBlock `json:"list"`
 }
@@ -31,9 +35,9 @@ type openWeatherResponse struct {
 type dataBlock struct {
 	Dt   int64 `json:"dt"`
 	Main struct {
-		TempMin  float32 `json:"temp_min"`
-		TempMax  float32 `json:"temp_max"`
-		Humidity int     `json:"humidity"`
+		TempC      float32 `json:"temp"`
+		FeelsLikeC float32 `json:"feels_like"`
+		Humidity   int     `json:"humidity"`
 	} `json:"main"`
 
 	Weather []struct {
@@ -201,8 +205,8 @@ func (c *openWeatherConfig) parseCond(dataInfo dataBlock) (iface.Cond, error) {
 	ret.Code = iface.CodeUnknown
 	ret.Desc = dataInfo.Weather[0].Description
 	ret.Humidity = &(dataInfo.Main.Humidity)
-	ret.TempC = &(dataInfo.Main.TempMin)
-	ret.FeelsLikeC = &(dataInfo.Main.TempMax)
+	ret.TempC = &(dataInfo.Main.TempC)
+	ret.FeelsLikeC = &(dataInfo.Main.FeelsLikeC)
 	if &dataInfo.Wind.Deg != nil {
 		p := int(dataInfo.Wind.Deg)
 		ret.WinddirDegree = &p
@@ -256,6 +260,14 @@ func (c *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 		return ret
 	}
 	ret.Forecast = c.parseDaily(resp.List, numdays)
+
+	// add in the sunrise/sunset information to the first day
+	// these maybe should deal with resp.City.TimeZone
+	if len(ret.Forecast) > 0 {
+		ret.Forecast[0].Astronomy.Sunrise = time.Unix(resp.City.SunRise, 0)
+		ret.Forecast[0].Astronomy.Sunset = time.Unix(resp.City.SunSet, 0)
+	}
+
 	return ret
 }
 

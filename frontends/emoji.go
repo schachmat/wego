@@ -93,6 +93,23 @@ func (c *emojiConfig) formatCond(cur []string, cond iface.Cond, current bool) (r
 	return
 }
 
+func (c *emojiConfig) printAstro(astro iface.Astro) {
+        // print sun astronomy data if present
+	if astro.Sunrise != astro.Sunset {
+	    // half the distance between sunrise and sunset
+	    noon_distance := time.Duration(int64(float32(astro.Sunset.UnixNano() - astro.Sunrise.UnixNano()) * 0.5))
+	    // time for solar noon
+	    noon := astro.Sunrise.Add(noon_distance)
+
+	    // the actual print statement
+	    fmt.Printf("🌞 rise↗ %s noon↑ %s set↘ %s\n", astro.Sunrise.Format(time.Kitchen), noon.Format(time.Kitchen), astro.Sunset.Format(time.Kitchen))
+	}
+        // print moon astronomy data if present
+	if astro.Moonrise != astro.Moonset {
+	    fmt.Printf("🌚 rise↗ %s set↘ %s\n", astro.Moonrise.Format(time.Kitchen), astro.Moonset)
+	}
+}
+
 func (c *emojiConfig) printDay(day iface.Day) (ret []string) {
 	desiredTimesOfDay := []time.Duration{
 		8 * time.Hour,
@@ -104,6 +121,8 @@ func (c *emojiConfig) printDay(day iface.Day) (ret []string) {
 	for i := range ret {
 		ret[i] = "│"
 	}
+
+	c.printAstro(day.Astronomy)
 
 	// save our selected elements from day.Slots in this array
 	cols := make([]iface.Cond, len(desiredTimesOfDay))
@@ -157,6 +176,7 @@ func (c *emojiConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 	if r.Forecast == nil {
 		log.Fatal("No detailed weather forecast available.")
 	}
+	fmt.Printf("\n")
 	for _, d := range r.Forecast {
 		for _, val := range c.printDay(d) {
 			fmt.Fprintln(stdout, val)
