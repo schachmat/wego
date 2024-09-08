@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/schachmat/wego/iface"
 	"io"
 	"log"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/schachmat/wego/iface"
 )
 
 type openmeteoConfig struct {
@@ -26,6 +27,7 @@ type curCond struct {
 	ApparentTemperature *float32 `json:"apparent_temperature"`
 	IsDay               int      `json:"is_day"`
 	WeatherCode         int      `json:"weather_code"`
+	WindDirection10M    *int     `json:"wind_direction_10m"`
 }
 
 type Daily struct {
@@ -47,6 +49,7 @@ type Hourly struct {
 	Temperature2M       []*float32 `json:"temperature_2m"`
 	ApparentTemperature []*float32 `json:"apparent_temperature"`
 	WeatherCode         []int      `json:"weather_code"`
+	WindDirection10M    []*int     `json:"wind_direction_10m"`
 }
 
 type openmeteoResponse struct {
@@ -115,13 +118,13 @@ func (opmeteo *openmeteoConfig) parseDaily(dailyInfo Hourly) []iface.Day {
 
 	for ind, dayTime := range dailyInfo.Time {
 
-		//day := new(iface.Day)
 		cond := new(iface.Cond)
 
 		cond.Code = codemap[dailyInfo.WeatherCode[ind]]
 		cond.TempC = dailyInfo.Temperature2M[ind]
 		cond.FeelsLikeC = dailyInfo.ApparentTemperature[ind]
 		cond.Time = time.Unix(dayTime, 0)
+		cond.WinddirDegree = dailyInfo.WindDirection10M[ind]
 
 		if day == nil {
 			day = new(iface.Day)
@@ -153,6 +156,7 @@ func parseCurCond(current curCond) (ret iface.Cond) {
 
 	ret.TempC = current.Temperature2M
 	ret.FeelsLikeC = current.ApparentTemperature
+	ret.WinddirDegree = current.WindDirection10M
 	return ret
 
 }
@@ -169,7 +173,7 @@ func (opmeteo *openmeteoConfig) Fetch(location string, numdays int) iface.Data {
 	if len(location) > 0 {
 		params = append(params, loc)
 	}
-	params = append(params, "current=temperature_2m,apparent_temperature,is_day,weather_code&hourly=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,apparent_temperature_max,sunrise,sunset&timeformat=unixtime&forecast_days=3")
+	params = append(params, "current=temperature_2m,apparent_temperature,is_day,weather_code&hourly=temperature_2m,apparent_temperature,weather_code,wind_direction_10m&daily=weather_code,temperature_2m_max,apparent_temperature_max,sunrise,sunset&timeformat=unixtime&forecast_days=3")
 
 	requri := openmeteoURI + strings.Join(params, "&")
 
@@ -188,7 +192,8 @@ func (opmeteo *openmeteoConfig) Fetch(location string, numdays int) iface.Data {
 
 	if opmeteo.debug {
 		log.Println("Weather request:", requri)
-		log.Println("Weather response:", string(body))
+		b, _ := json.MarshalIndent(body, "", "\t")
+		fmt.Println("Weather response:", string(b))
 	}
 
 	var resp openmeteoResponse
@@ -207,8 +212,6 @@ func (opmeteo *openmeteoConfig) Fetch(location string, numdays int) iface.Data {
 		ret.Forecast = forecast
 	}
 
-	//jcart, _ := json.MarshalIndent(ret, "", "\t")
-	//fmt.Println(string(jcart))
 	return ret
 }
 
