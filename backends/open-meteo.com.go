@@ -166,6 +166,10 @@ func (opmeteo *openmeteoConfig) Fetch(location string, numdays int) iface.Data {
 	var params []string
 	var loc string
 
+	if numdays <= 0 {
+		log.Fatal("Number of days less than 1 ")
+	}
+
 	if matched, err := regexp.MatchString(`^-?[0-9]*(\.[0-9]+)?,-?[0-9]*(\.[0-9]+)?$`, location); matched && err == nil {
 		s := strings.Split(location, ",")
 		loc = fmt.Sprintf("latitude=%s&longitude=%s", s[0], s[1])
@@ -173,7 +177,10 @@ func (opmeteo *openmeteoConfig) Fetch(location string, numdays int) iface.Data {
 	if len(location) > 0 {
 		params = append(params, loc)
 	}
-	params = append(params, "current=temperature_2m,apparent_temperature,is_day,weather_code&hourly=temperature_2m,apparent_temperature,weather_code,wind_direction_10m&daily=weather_code,temperature_2m_max,apparent_temperature_max,sunrise,sunset&timeformat=unixtime&forecast_days=3")
+	params = append(params, "current=temperature_2m,apparent_temperature,is_day,weather_code,wind_direction_10m")
+	params = append(params, "hourly=temperature_2m,apparent_temperature,weather_code,wind_direction_10m")
+	params = append(params, "daily=weather_code,temperature_2m_max,apparent_temperature_max,sunrise,sunset")
+	params = append(params, fmt.Sprintf("timeformat=unixtime&forecast_days=%d", numdays))
 
 	requri := openmeteoURI + strings.Join(params, "&")
 
