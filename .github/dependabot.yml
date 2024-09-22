@@ -1,0 +1,15 @@
+version: 2
+# See https://docs.github.com/en/github/administering-a-repository/configuration-options-for-dependency-updates for options
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "docker"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
