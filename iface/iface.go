@@ -123,7 +123,7 @@ func (u UnitSystem) Temp(tempC float32) (res float32, unit string) {
 	} else if u == UnitsImperial {
 		return tempC*1.8 + 32, "°F"
 	} else if u == UnitsSi {
-		return tempC + 273.16, "°K"
+		return tempC + 273.16, "K"
 	}
 	log.Fatalln("Unknown unit system:", u)
 	return
