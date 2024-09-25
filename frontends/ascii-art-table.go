@@ -18,10 +18,12 @@ import (
 type aatConfig struct {
 	coords     bool
 	monochrome bool
-	unit       iface.UnitSystem
+	compact    bool
+
+	unit iface.UnitSystem
 }
 
-//TODO: replace s parameter with printf interface?
+// TODO: replace s parameter with printf interface?
 func aatPad(s string, mustLen int) (ret string) {
 	ansiEsc := regexp.MustCompile("\033.*?m")
 	ret = s
@@ -283,9 +285,13 @@ func (c *aatConfig) formatCond(cur []string, cond iface.Cond, current bool) (ret
 		},
 	}
 
-	icon, ok := codes[cond.Code]
-	if !ok {
-		log.Fatalln("aat-frontend: The following weather code has no icon:", cond.Code)
+	icon := make([]string, 5)
+	if !c.compact {
+		var ok bool
+		icon, ok = codes[cond.Code]
+		if !ok {
+			log.Fatalln("aat-frontend: The following weather code has no icon:", cond.Code)
+		}
 	}
 
 	desc := cond.Desc
@@ -352,19 +358,45 @@ func (c *aatConfig) printDay(day iface.Day) (ret []string) {
 	}
 
 	dateFmt := "┤ " + day.Date.Format("Mon 02. Jan") + " ├"
-	ret = append([]string{
-		"                                                       ┌─────────────┐                                                       ",
-		"┌──────────────────────────────┬───────────────────────" + dateFmt + "───────────────────────┬──────────────────────────────┐",
-		"│           Morning            │             Noon      └──────┬──────┘    Evening            │            Night             │",
-		"├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤"},
-		ret...)
-	return append(ret,
-		"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
+	if !c.compact {
+		ret = append([]string{
+			"                                                       ┌─────────────┐                                                       ",
+			"┌──────────────────────────────┬───────────────────────" + dateFmt + "───────────────────────┬──────────────────────────────┐",
+			"│           Morning            │             Noon      └──────┬──────┘    Evening            │            Night             │",
+			"├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤"},
+			ret...)
+		ret = append(ret,
+			"└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘")
+	} else {
+		merge := func(src string, into string) string {
+			ret := []rune(into)
+			for k, v := range src {
+				ret[k] = v
+			}
+			return string(ret)
+		}
+
+		spaces := (len(ret[0]) / 4) - 3
+		bar := strings.Repeat("─", spaces)
+
+		ret = append([]string{
+			day.Date.Format("Mon 02. Jan"),
+			"┌" + merge("Morning", bar) + "┬" + merge("Noon", bar) + "┬" + merge("Evening", bar) + "┬" + merge("Night", bar) + "┐",
+		}, ret...)
+
+		ret = append(ret,
+			"└"+bar+"┴"+bar+"┴"+bar+"┴"+bar+"┘",
+		)
+	}
+
+	return ret
 }
 
 func (c *aatConfig) Setup() {
 	flag.BoolVar(&c.coords, "aat-coords", false, "aat-frontend: Show geo coordinates")
 	flag.BoolVar(&c.monochrome, "aat-monochrome", false, "aat-frontend: Monochrome output")
+
+	flag.BoolVar(&c.compact, "aat-compact", false, "aat-frontend: Compact output")
 }
 
 func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
