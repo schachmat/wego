@@ -213,12 +213,13 @@ func (opmeteo *openmeteoConfig) Fetch(location string, numdays int) iface.Data {
 
 	forecast := opmeteo.parseDaily(resp.Hourly)
 
+	for i, _ := range forecast {
+		forecast[i].Astronomy.Sunset = time.Unix(resp.Daily.Sunset[i], 0)
+		forecast[i].Astronomy.Sunrise = time.Unix(resp.Daily.Sunrise[i], 0)
+	}
 	if len(forecast) > 0 {
-		forecast[0].Astronomy.Sunset = time.Unix(resp.Daily.Sunset[0], 0)
-		forecast[0].Astronomy.Sunrise = time.Unix(resp.Daily.Sunrise[0], 0)
 		ret.Forecast = forecast
 	}
-
 	return ret
 }
 
