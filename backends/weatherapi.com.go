@@ -46,8 +46,8 @@ type forecastBlock struct {
 			Description string `json:"text"`
 			Code        int    `json:"code"`
 		} `json:"condition"`
-		Hour []hourlyWeather `json:"hour"`
 	} `json:"day"`
+	Hour []hourlyWeather `json:"hour"`
 }
 
 type hourlyWeather struct {
@@ -158,36 +158,26 @@ func (c *weatherApiConfig) fetch(url string) (*weatherApiResponse, error) {
 }
 
 func (c *weatherApiConfig) parseDaily(dataBlock []forecastBlock, numdays int) []iface.Day {
-	var forecast []iface.Day
-	var day *iface.Day
+	var ret []iface.Day
 
-	for _, dayData := range dataBlock {
-		for _, data := range dayData.Day.Hour {
-			slot, err := c.parseCond(data)
+	for i, day := range dataBlock {
+		if i == numdays {
+			break
+		}
+		newDay := new(iface.Day)
+		newDay.Date = time.Unix(day.DateEpoch, 0)
+		for _, hour := range day.Hour {
+			slot, err := c.parseCond(hour)
 			if err != nil {
-				log.Println("Error parsing weather condition:", err)
+				log.Println("Error parsing hourly weather condition:", err)
 				continue
 			}
-			if day == nil {
-				day = new(iface.Day)
-				day.Date = slot.Time
-			}
-			if day.Date.Day() == slot.Time.Day() {
-				day.Slots = append(day.Slots, slot)
-			}
-			if day.Date.Day() != slot.Time.Day() {
-				forecast = append(forecast, *day)
-				if len(forecast) >= numdays {
-					break
-				}
-				day = new(iface.Day)
-				day.Date = slot.Time
-				day.Slots = append(day.Slots, slot)
-			}
+			newDay.Slots = append(newDay.Slots, slot)
 		}
+		ret = append(ret, *newDay)
 	}
 
-	return forecast
+	return ret
 }
 
 func (c *weatherApiConfig) parseCond(forecastInfo hourlyWeather) (iface.Cond, error) {
