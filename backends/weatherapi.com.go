@@ -17,14 +17,14 @@ type weatherApiResponse struct {
 		Name    string `json:"name"`
 		Country string `json:"country"`
 	} `json:"location"`
-	Forcast struct {
-		List []forcastBlock `json:"forcastday"`
-	} `json:"forcast"`
+	Forecast struct {
+		List []forecastBlock `json:"forecastday"`
+	} `json:"forecast"`
 }
 
-type forcastBlock struct {
+type forecastBlock struct {
 	Date      time.Time `json:"date"`
-	DateEpoch int64     `json:"date_epocj"`
+	DateEpoch int64     `json:"date_epoch"`
 	Day       struct {
 		TempC        float32 `json:"avgtemp_c"`
 		Humidity     int     `json:"avghumidity"`
@@ -33,7 +33,22 @@ type forcastBlock struct {
 			Description string `json:"text"`
 			Code        int    `json:"code"`
 		} `json:"condition"`
+		Hour []hourlyWeather `json:"hour"`
 	} `json:"day"`
+}
+
+type hourlyWeather struct {
+	TimeEpoch  int64   `json:"time_epoch"`
+	TempC      float32 `json:"temp_c"`
+	FeelsLikeC float32 `json:"feelslike_c"`
+	Humidity   int     `json:"humidity"`
+	Condition  struct {
+		Code int    `json:"code"`
+		Desc string `json:"text"`
+	} `json:"condition"`
+	WindspeedKmph       *float32 `json:"wind_kph"`
+	WinddirDegree       int      `json:"wind_degree"`
+	ChanceOfRainPercent int      `json:"chance_of_rain"`
 }
 
 type weatherApiConfig struct {
@@ -41,71 +56,12 @@ type weatherApiConfig struct {
 	debug  bool
 }
 
-func (c *weatherApiConfig) Setup() {
-	flag.StringVar(&c.apiKey, "wth-api-key", "", "weatherapi backend: the api `Key` to use")
-	flag.BoolVar(&c.debug, "wth-debug", false, "weatherapi backend: print raw requests and responses")
-}
+const (
+	weatherApiURI = "http://api.weatherapi.com/v1/forecast.json?key=%s&q=%s&days=3&aqi=no&alerts=no"
+)
 
-func (c *weatherApiConfig) fetch(url string) (*weatherApiResponse, error) {
-	res, err := http.Get(url)
-	if c.debug {
-		fmt.Printf("Fetching %s\n", url)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("Unable to get (%s) %v", url, err)
-	}
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to read response body (%s): %v", url, err)
-	}
-
-	if c.debug {
-		fmt.Printf("Response (%s):\n%s\n", url, string(body))
-	}
-
-	var resp weatherApiResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
-	}
-
-	return &resp, nil
-}
-
-func (c *weatherApiConfig) parseDaily(dataBlock []forcastBlock, numdays int) []iface.Day {
-	var forcast []iface.Day
-	var day *iface.Day
-
-	for _, data := range dataBlock {
-		slot, err := c.parseCond(data)
-		if err != nil {
-			log.Println("Error parsing weather condition:", err)
-			continue
-		}
-		if day == nil {
-			day = new(iface.Day)
-			day.Date = slot.Time
-		}
-		if day.Date.Day() == slot.Time.Day() {
-			day.Slots = append(day.Slots, slot)
-		}
-		if day.Date.Day() != slot.Time.Day() {
-			forcast = append(forcast, *day)
-			if len(forcast) >= numdays {
-				break
-			}
-			day = new(iface.Day)
-			day.Date = slot.Time
-			day.Slots = append(day.Slots, slot)
-		}
-	}
-
-	return forcast
-}
-
-func (c *weatherApiConfig) parseCond(forcastInfo forcastBlock) (iface.Cond, error) {
-	var ret iface.Cond
-	codemap := map[int]iface.WeatherCode{
+var (
+	codemapping = map[int]iface.WeatherCode{
 		1000: iface.CodeSunny,
 		1003: iface.CodePartlyCloudy,
 		1006: iface.CodeCloudy,
@@ -155,25 +111,135 @@ func (c *weatherApiConfig) parseCond(forcastInfo forcastBlock) (iface.Cond, erro
 		1279: iface.CodeThunderySnowShowers,
 		1282: iface.CodeThunderySnowShowers,
 	}
+)
+
+func (c *weatherApiConfig) Setup() {
+	flag.StringVar(&c.apiKey, "wth-api-key", "", "weatherapi backend: the api `Key` to use")
+	flag.BoolVar(&c.debug, "wth-debug", false, "weatherapi backend: print raw requests and responses")
+}
+
+func (c *weatherApiConfig) fetch(url string) (*weatherApiResponse, error) {
+	res, err := http.Get(url)
+	if c.debug {
+		fmt.Printf("Fetching %s\n", url)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("Unable to get (%s) %v", url, err)
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to read response body (%s): %v", url, err)
+	}
+
+	if c.debug {
+		fmt.Printf("Response (%s):\n%s\n", url, string(body))
+	}
+
+	var resp weatherApiResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
+	}
+
+	return &resp, nil
+}
+
+func (c *weatherApiConfig) parseDaily(dataBlock []forecastBlock, numdays int) []iface.Day {
+	var forecast []iface.Day
+	var day *iface.Day
+
+	for _, dayData := range dataBlock {
+		for _, data := range dayData.Day.Hour {
+			slot, err := c.parseCond(data)
+			if err != nil {
+				log.Println("Error parsing weather condition:", err)
+				continue
+			}
+			if day == nil {
+				day = new(iface.Day)
+				day.Date = slot.Time
+			}
+			if day.Date.Day() == slot.Time.Day() {
+				day.Slots = append(day.Slots, slot)
+			}
+			if day.Date.Day() != slot.Time.Day() {
+				forecast = append(forecast, *day)
+				if len(forecast) >= numdays {
+					break
+				}
+				day = new(iface.Day)
+				day.Date = slot.Time
+				day.Slots = append(day.Slots, slot)
+			}
+		}
+	}
+
+	return forecast
+}
+
+func (c *weatherApiConfig) parseCond(forecastInfo hourlyWeather) (iface.Cond, error) {
+	var ret iface.Cond
 
 	ret.Code = iface.CodeUnknown
-	ret.Desc = forcastInfo.Day.Weather.Description
-	ret.Humidity = &(forcastInfo.Day.Humidity)
-	ret.TempC = &(forcastInfo.Day.TempC)
-	ret.WindspeedKmph = &(forcastInfo.Day.MaxWindSpeed)
+	ret.Desc = forecastInfo.Condition.Desc
+	ret.Humidity = &(forecastInfo.Humidity)
+	ret.TempC = &(forecastInfo.TempC)
+	ret.FeelsLikeC = &(forecastInfo.FeelsLikeC)
+	ret.WindspeedKmph = forecastInfo.WindspeedKmph
+	ret.WinddirDegree = &forecastInfo.WinddirDegree
+	ret.ChanceOfRainPercent = &forecastInfo.ChanceOfRainPercent
 
-	if val, ok := codemap[forcastInfo.Day.Weather.Code]; ok {
+	if val, ok := codemapping[forecastInfo.Condition.Code]; ok {
 		ret.Code = val
 	}
 
-	ret.Time = time.Unix(forcastInfo.DateEpoch, 0)
+	ret.Time = time.Unix(forecastInfo.TimeEpoch, 0)
+
+	return ret, nil
+}
+
+func (c *weatherApiConfig) parseCurCond(forecastInfo forecastBlock) (iface.Cond, error) {
+	var ret iface.Cond
+
+	ret.Code = iface.CodeUnknown
+	ret.Desc = forecastInfo.Day.Weather.Description
+	ret.Humidity = &(forecastInfo.Day.Humidity)
+	ret.TempC = &(forecastInfo.Day.TempC)
+
+	if val, ok := codemapping[forecastInfo.Day.Weather.Code]; ok {
+		ret.Code = val
+	}
+
+	ret.Time = time.Unix(forecastInfo.DateEpoch, 0)
 
 	return ret, nil
 }
 
 func (c *weatherApiConfig) Fetch(location string, numdays int) iface.Data {
+	var ret iface.Data
 
-	return iface.Data{}
+	if len(c.apiKey) == 0 {
+		log.Fatal("No openweathermap.org API key specified.\nYou have to register for one at https://home.openweathermap.org/users/sign_up")
+	}
+
+	resp, err := c.fetch(fmt.Sprintf(weatherApiURI, c.apiKey, location))
+	if err != nil {
+		log.Fatalf("Failed to fetch weather data: %v\n", err)
+	}
+	fmt.Println(resp)
+	ret.Current, err = c.parseCurCond(resp.Forecast.List[0])
+	ret.Location = fmt.Sprintf("%s, %s", resp.Location.Name, resp.Location.Country)
+
+	if err != nil {
+		log.Fatalf("Failed to fetch weather data: %v\n", err)
+	}
+
+	if numdays == 0 {
+		return ret
+	}
+	ret.Forecast = c.parseDaily(resp.Forecast.List, numdays)
+
+	return ret
 }
 
 func init() {
