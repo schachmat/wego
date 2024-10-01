@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -22,8 +23,9 @@ type weatherApiResponse struct {
 }
 
 type forcastBlock struct {
-	Date time.Time `json:"date"`
-	Day  struct {
+	Date      time.Time `json:"date"`
+	DateEpoch int64     `json:"date_epocj"`
+	Day       struct {
 		TempC        float32 `json:"avgtemp_c"`
 		Humidity     int     `json:"avghumidity"`
 		MaxWindSpeed float32 `json:"maxwind_kph"`
@@ -68,6 +70,37 @@ func (c *weatherApiConfig) fetch(url string) (*weatherApiResponse, error) {
 	}
 
 	return &resp, nil
+}
+
+func (c *weatherApiConfig) parseDaily(dataBlock []forcastBlock, numdays int) []iface.Day {
+	var forcast []iface.Day
+	var day *iface.Day
+
+	for _, data := range dataBlock {
+		slot, err := c.parseCond(data)
+		if err != nil {
+			log.Println("Error parsing weather condition:", err)
+			continue
+		}
+		if day == nil {
+			day = new(iface.Day)
+			day.Date = slot.Time
+		}
+		if day.Date.Day() == slot.Time.Day() {
+			day.Slots = append(day.Slots, slot)
+		}
+		if day.Date.Day() != slot.Time.Day() {
+			forcast = append(forcast, *day)
+			if len(forcast) >= numdays {
+				break
+			}
+			day = new(iface.Day)
+			day.Date = slot.Time
+			day.Slots = append(day.Slots, slot)
+		}
+	}
+
+	return forcast
 }
 
 func (c *weatherApiConfig) parseCond(forcastInfo forcastBlock) (iface.Cond, error) {
@@ -132,6 +165,8 @@ func (c *weatherApiConfig) parseCond(forcastInfo forcastBlock) (iface.Cond, erro
 	if val, ok := codemap[forcastInfo.Day.Weather.Code]; ok {
 		ret.Code = val
 	}
+
+	ret.Time = time.Unix(forcastInfo.DateEpoch, 0)
 
 	return ret, nil
 }
