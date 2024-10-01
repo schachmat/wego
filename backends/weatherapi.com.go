@@ -17,14 +17,27 @@ type weatherApiResponse struct {
 		Name    string `json:"name"`
 		Country string `json:"country"`
 	} `json:"location"`
+	Current  currentCond `json:"current"`
 	Forecast struct {
 		List []forecastBlock `json:"forecastday"`
 	} `json:"forecast"`
 }
 
+type currentCond struct {
+	TempC      float32 `json:"temp_c"`
+	FeelsLikeC float32 `json:"feelslike_c"`
+	Humidity   int     `json:"humidity"`
+	Condition  struct {
+		Code int    `json:"code"`
+		Desc string `json:"text"`
+	} `json:"condition"`
+	WindspeedKmph       *float32 `json:"wind_kph"`
+	WinddirDegree       int      `json:"wind_degree"`
+	ChanceOfRainPercent int      `json:"chance_of_rain"`
+}
+
 type forecastBlock struct {
-	Date      time.Time `json:"date"`
-	DateEpoch int64     `json:"date_epoch"`
+	DateEpoch int64 `json:"date_epoch"`
 	Day       struct {
 		TempC        float32 `json:"avgtemp_c"`
 		Humidity     int     `json:"avghumidity"`
@@ -57,7 +70,7 @@ type weatherApiConfig struct {
 }
 
 const (
-	weatherApiURI = "http://api.weatherapi.com/v1/forecast.json?key=%s&q=%s&days=3&aqi=no&alerts=no"
+	weatherApiURI = "https://api.weatherapi.com/v1/forecast.json?key=%s&q=%s&days=3&aqi=no&alerts=no"
 )
 
 var (
@@ -198,19 +211,21 @@ func (c *weatherApiConfig) parseCond(forecastInfo hourlyWeather) (iface.Cond, er
 	return ret, nil
 }
 
-func (c *weatherApiConfig) parseCurCond(forecastInfo forecastBlock) (iface.Cond, error) {
+func (c *weatherApiConfig) parseCurCond(forecastInfo currentCond) (iface.Cond, error) {
 	var ret iface.Cond
 
 	ret.Code = iface.CodeUnknown
-	ret.Desc = forecastInfo.Day.Weather.Description
-	ret.Humidity = &(forecastInfo.Day.Humidity)
-	ret.TempC = &(forecastInfo.Day.TempC)
+	ret.Desc = forecastInfo.Condition.Desc
+	ret.Humidity = &(forecastInfo.Humidity)
+	ret.TempC = &(forecastInfo.TempC)
+	ret.FeelsLikeC = &(forecastInfo.FeelsLikeC)
+	ret.WindspeedKmph = forecastInfo.WindspeedKmph
+	ret.WinddirDegree = &forecastInfo.WinddirDegree
+	ret.ChanceOfRainPercent = &forecastInfo.ChanceOfRainPercent
 
-	if val, ok := codemapping[forecastInfo.Day.Weather.Code]; ok {
+	if val, ok := codemapping[forecastInfo.Condition.Code]; ok {
 		ret.Code = val
 	}
-
-	ret.Time = time.Unix(forecastInfo.DateEpoch, 0)
 
 	return ret, nil
 }
@@ -226,8 +241,7 @@ func (c *weatherApiConfig) Fetch(location string, numdays int) iface.Data {
 	if err != nil {
 		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
-	fmt.Println(resp)
-	ret.Current, err = c.parseCurCond(resp.Forecast.List[0])
+	ret.Current, err = c.parseCurCond(resp.Current)
 	ret.Location = fmt.Sprintf("%s, %s", resp.Location.Name, resp.Location.Country)
 
 	if err != nil {
