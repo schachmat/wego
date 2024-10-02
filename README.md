@@ -57,6 +57,14 @@ go install github.com/schachmat/wego@latest
       location=New York
       wwo-api-key=YOUR_WORLDWEATHERONLINE_API_KEY_HERE
     ```
+0. __With a [WeatherAPI](https://www.weatherapi.com/) account__
+    * You can create an account and get a free API key by [signing up](https://www.weatherapi.com/signup.aspx)
+    * Update the following `.wegorc` config variables to fit your needs:
+    ```
+      backend=weatherapi
+      location=New York
+      wth-api-key=YOUR_WEATHERAPI_API_KEY_HERE
+    ```
 0. You may want to adjust other preferences like `days`, `units` and `…-lang` as
    well. Save the file.
 0. Run `wego` once again and you should get the weather forecast for the current
