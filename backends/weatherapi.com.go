@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/schachmat/wego/iface"
@@ -67,10 +68,11 @@ type hourlyWeather struct {
 type weatherApiConfig struct {
 	apiKey string
 	debug  bool
+	lang   string
 }
 
 const (
-	weatherApiURI = "https://api.weatherapi.com/v1/forecast.json?key=%s&q=%s&days=3&aqi=no&alerts=no"
+	weatherApiURI = "https://api.weatherapi.com/v1/forecast.json?key=%s&q=%s&days=%s&aqi=no&alerts=no&lang=%s"
 )
 
 var (
@@ -129,6 +131,7 @@ var (
 
 func (c *weatherApiConfig) Setup() {
 	flag.StringVar(&c.apiKey, "wth-api-key", "", "weatherapi backend: the api `Key` to use")
+	flag.StringVar(&c.lang, "wth-lang", "en", "weatherapi backend: the `LANGUAGE` to request from weatherapi")
 	flag.BoolVar(&c.debug, "wth-debug", false, "weatherapi backend: print raw requests and responses")
 }
 
@@ -225,10 +228,10 @@ func (c *weatherApiConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
 
 	if len(c.apiKey) == 0 {
-		log.Fatal("No openweathermap.org API key specified.\nYou have to register for one at https://home.openweathermap.org/users/sign_up")
+		log.Fatal("No weatherapi.com API key specified.\nYou have to register for one at https://weatherapi.com/signup.aspx")
 	}
 
-	resp, err := c.fetch(fmt.Sprintf(weatherApiURI, c.apiKey, location))
+	resp, err := c.fetch(fmt.Sprintf(weatherApiURI, c.apiKey, location, strconv.Itoa(numdays), c.lang))
 	if err != nil {
 		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
