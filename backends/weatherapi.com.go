@@ -38,17 +38,8 @@ type currentCond struct {
 }
 
 type forecastBlock struct {
-	DateEpoch int64 `json:"date_epoch"`
-	Day       struct {
-		TempC        float32 `json:"avgtemp_c"`
-		Humidity     int     `json:"avghumidity"`
-		MaxWindSpeed float32 `json:"maxwind_kph"`
-		Weather      struct {
-			Description string `json:"text"`
-			Code        int    `json:"code"`
-		} `json:"condition"`
-	} `json:"day"`
-	Hour []hourlyWeather `json:"hour"`
+	DateEpoch int64           `json:"date_epoch"`
+	Hour      []hourlyWeather `json:"hour"`
 }
 
 type hourlyWeather struct {
