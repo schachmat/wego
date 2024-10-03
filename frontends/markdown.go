@@ -15,8 +15,8 @@ import (
 )
 
 type mdConfig struct {
-	coords     bool
-	unit       iface.UnitSystem
+	coords bool
+	units  iface.Units
 }
 
 func mdPad(s string, mustLen int) (ret string) {
@@ -39,11 +39,11 @@ func mdPad(s string, mustLen int) (ret string) {
 
 func (c *mdConfig) formatTemp(cond iface.Cond) string {
 
-	cvtUnits := func (temp float32) string {
-		t, _ := c.unit.Temp(temp)
+	cvtUnits := func(temp float32) string {
+		t, _ := c.units.ConvertTemp(temp)
 		return fmt.Sprintf("%d", int(t))
 	}
-	_, u := c.unit.Temp(0.0)
+	_, u := c.units.ConvertTemp(0.0)
 
 	if cond.TempC == nil {
 		return mdPad(fmt.Sprintf("? %s", u), 15)
@@ -66,11 +66,11 @@ func (c *mdConfig) formatWind(cond iface.Cond) string {
 		return arrows[((*deg+22)%360)/45]
 	}
 	color := func(spdKmph float32) string {
-		s, _ := c.unit.Speed(spdKmph)
+		s, _ := c.units.ConvertSpeed(spdKmph)
 		return fmt.Sprintf("| %d ", int(s))
 	}
 
-	_, u := c.unit.Speed(0.0)
+	_, u := c.units.ConvertSpeed(0.0)
 
 	if cond.WindspeedKmph == nil {
 		return mdPad(windDir(cond.WinddirDegree), 15)
@@ -90,13 +90,13 @@ func (c *mdConfig) formatVisibility(cond iface.Cond) string {
 	if cond.VisibleDistM == nil {
 		return mdPad("", 15)
 	}
-	v, u := c.unit.Distance(*cond.VisibleDistM)
+	v, u := c.units.ConvertDistance(*cond.VisibleDistM)
 	return mdPad(fmt.Sprintf("%d %s", int(v), u), 15)
 }
 
 func (c *mdConfig) formatRain(cond iface.Cond) string {
 	if cond.PrecipM != nil {
-		v, u := c.unit.Distance(*cond.PrecipM)
+		v, u := c.units.ConvertDistance(*cond.PrecipM)
 		u += "/h" // it's the same in all unit systems
 		if cond.ChanceOfRainPercent != nil {
 			return mdPad(fmt.Sprintf("%.1f %s | %d%%", v, u, *cond.ChanceOfRainPercent), 15)
@@ -197,7 +197,7 @@ func (c *mdConfig) printDay(day iface.Day) (ret []string) {
 	}
 	dateFmt := day.Date.Format("Mon Jan 02")
 	ret = append([]string{
-		"\n### Forecast for "+dateFmt+ "\n",
+		"\n### Forecast for " + dateFmt + "\n",
 		"| Morning                   | Noon                      | Evening                   | Night                     |",
 		"| ------------------------- | ------------------------- | ------------------------- | ------------------------- |"},
 		ret...)
@@ -208,8 +208,8 @@ func (c *mdConfig) Setup() {
 	flag.BoolVar(&c.coords, "md-coords", false, "md-frontend: Show geo coordinates")
 }
 
-func (c *mdConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
-	c.unit = unitSystem
+func (c *mdConfig) Render(r iface.Data, units iface.Units) {
+	c.units = units
 	fmt.Printf("## Weather for %s%s\n\n", r.Location, c.formatGeo(r.GeoLoc))
 	stdout := colorable.NewNonColorable(os.Stdout)
 	out := c.formatCond(make([]string, 5), r.Current, true)

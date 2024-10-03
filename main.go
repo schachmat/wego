@@ -46,12 +46,13 @@ func main() {
 	flag.StringVar(location, "l", "40.748,-73.985", "`LOCATION` to be queried (shorthand)")
 	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
 	flag.IntVar(numdays, "d", 3, "`NUMBER` of days of weather forecast to be displayed (shorthand)")
-	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si, metric-ms")
-	flag.StringVar(unitSystem, "u", "metric", "`UNITSYSTEM` to use for output. (shorthand)\n    \tChoices are: metric, imperial, si, metric-ms")
 	selectedBackend := flag.String("backend", "openweathermap", "`BACKEND` to be used")
 	flag.StringVar(selectedBackend, "b", "openweathermap", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
+	tempUnit := flag.String("unit-temperature", "celsius", "`UNIT` for temperature.\n    \tChoices are: celsius, fahrenheit, kelvin")
+	speedUnit := flag.String("unit-speed", "kmh", "`UNIT` for wind speed.\n    \tChoices are: kmh, mph, ms, beaufort")
+	distanceUnit := flag.String("unit-distance", "metric", "`UNIT` for distance.\n    \tChoices are: metric, imperial")
 
 	// print out a list of all backends and frontends in the usage
 	tmpUsage := flag.Usage
@@ -81,20 +82,11 @@ func main() {
 	}
 	r := be.Fetch(*location, *numdays)
 
-	// set unit system
-	unit := iface.UnitsMetric
-	if *unitSystem == "imperial" {
-		unit = iface.UnitsImperial
-	} else if *unitSystem == "si" {
-		unit = iface.UnitsSi
-	} else if *unitSystem == "metric-ms" {
-		unit = iface.UnitsMetricMs
-	}
-
 	// get selected frontend and render the weather data with it
 	fe, ok := iface.AllFrontends[*selectedFrontend]
 	if !ok {
 		log.Fatalf("Could not find selected frontend \"%s\"", *selectedFrontend)
 	}
-	fe.Render(r, unit)
+	units := iface.NewUnits(*tempUnit, *speedUnit, *distanceUnit)
+	fe.Render(r, units)
 }

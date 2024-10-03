@@ -108,41 +108,117 @@ type Data struct {
 	GeoLoc   *LatLon
 }
 
-type UnitSystem int
+type Unit int
 
 const (
-	UnitsMetric UnitSystem = iota
-	UnitsImperial
-	UnitsSi
-	UnitsMetricMs
+	Celsius Unit = iota
+	Fahrenheit
+	Kelvin
+	Kmh
+	Mph
+	Ms
+	Beaufort
+	Metric
+	Imperial
 )
 
-func (u UnitSystem) Temp(tempC float32) (res float32, unit string) {
-	if u == UnitsMetric || u == UnitsMetricMs {
+type Units struct {
+	Temp     Unit
+	Speed    Unit
+	Distance Unit
+}
+
+func NewUnits(tempUnit, speedUnit, distanceUnit string) Units {
+	units := Units{
+		Temp:     Celsius,
+		Speed:    Kmh,
+		Distance: Metric,
+	}
+
+	unitMap := map[string]Unit{
+		"celsius":    Celsius,
+		"fahrenheit": Fahrenheit,
+		"kelvin":     Kelvin,
+		"kmh":        Kmh,
+		"mph":        Mph,
+		"ms":         Ms,
+		"beaufort":   Beaufort,
+		"metric":     Metric,
+		"imperial":   Imperial,
+	}
+
+	if unit, ok := unitMap[tempUnit]; ok {
+		units.Temp = unit
+	}
+	if unit, ok := unitMap[speedUnit]; ok {
+		units.Speed = unit
+	}
+	if unit, ok := unitMap[distanceUnit]; ok {
+		units.Distance = unit
+	}
+
+	return units
+}
+
+func (u Units) ConvertTemp(tempC float32) (res float32, unit string) {
+	switch u.Temp {
+	case Celsius:
 		return tempC, "°C"
-	} else if u == UnitsImperial {
+	case Fahrenheit:
 		return tempC*1.8 + 32, "°F"
-	} else if u == UnitsSi {
-		return tempC + 273.16, "°K"
+	case Kelvin:
+		return tempC + 273.16, "K"
 	}
-	log.Fatalln("Unknown unit system:", u)
+	log.Fatalln("Unknown temperature unit:", u)
 	return
 }
 
-func (u UnitSystem) Speed(spdKmph float32) (res float32, unit string) {
-	if u == UnitsMetric {
+func (u Units) ConvertSpeed(spdKmph float32) (res float32, unit string) {
+	switch u.Speed {
+	case Kmh:
 		return spdKmph, "km/h"
-	} else if u == UnitsImperial {
+	case Mph:
 		return spdKmph / 1.609, "mph"
-	} else if u == UnitsSi || u == UnitsMetricMs {
+	case Ms:
 		return spdKmph / 3.6, "m/s"
+	case Beaufort:
+		switch {
+		case spdKmph < 1:
+			return 0, "Bft"
+		case spdKmph < 6:
+			return 1, "Bft"
+		case spdKmph < 12:
+			return 2, "Bft"
+		case spdKmph < 20:
+			return 3, "Bft"
+		case spdKmph < 29:
+			return 4, "Bft"
+		case spdKmph < 39:
+			return 5, "Bft"
+		case spdKmph < 50:
+			return 6, "Bft"
+		case spdKmph < 62:
+			return 7, "Bft"
+		case spdKmph < 75:
+			return 8, "Bft"
+		case spdKmph < 89:
+			return 9, "Bft"
+		case spdKmph < 103:
+			return 10, "Bft"
+		case spdKmph < 118:
+			return 11, "Bft"
+		default:
+			return 12, "Bft"
+		}
 	}
-	log.Fatalln("Unknown unit system:", u)
+
+	log.Fatalln("Unknown speed unit:", u)
 	return
 }
 
-func (u UnitSystem) Distance(distM float32) (res float32, unit string) {
-	if u == UnitsMetric || u == UnitsSi || u == UnitsMetricMs {
+func (u Units) ConvertDistance(distM float32) (res float32, unit string) {
+	switch u.Distance {
+	case Metric:
 		if distM < 1 {
 			return distM * 1000, "mm"
 		} else if distM < 1000 {
@@ -150,17 +226,17 @@ func (u UnitSystem) Distance(distM float32) (res float32, unit string) {
 		} else {
 			return distM / 1000, "km"
 		}
-	} else if u == UnitsImperial {
+	case Imperial:
 		res, unit = distM/0.0254, "in"
-		if res < 3*12 { // 1yd = 3ft, 1ft = 12in
+		if res < 3*12 {
 			return
-		} else if res < 8*10*22*36 { //1mi = 8fur, 1fur = 10ch, 1ch = 22yd
+		} else if res < 8*10*22*36 {
 			return res / 36, "yd"
 		} else {
 			return res / 8 / 10 / 22 / 36, "mi"
 		}
 	}
-	log.Fatalln("Unknown unit system:", u)
+	log.Fatalln("Unknown distance unit:", u)
 	return
 }
 
@@ -171,7 +247,7 @@ type Backend interface {
 
 type Frontend interface {
 	Setup()
-	Render(weather Data, unitSystem UnitSystem)
+	Render(weather Data, unitSystem Units)
 }
 
 var (

@@ -12,7 +12,7 @@ import (
 )
 
 type emojiConfig struct {
-	unit iface.UnitSystem
+	units iface.Units
 }
 
 func (c *emojiConfig) formatTemp(cond iface.Cond) string {
@@ -34,11 +34,11 @@ func (c *emojiConfig) formatTemp(cond iface.Cond) string {
 				break
 			}
 		}
-		t, _ := c.unit.Temp(temp)
+		t, _ := c.units.ConvertTemp(temp)
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(t))
 	}
 
-	_, u := c.unit.Temp(0.0)
+	_, u := c.units.ConvertTemp(0.0)
 
 	if cond.TempC == nil {
 		return aatPad(fmt.Sprintf("? %s", u), 12)
@@ -94,19 +94,19 @@ func (c *emojiConfig) formatCond(cur []string, cond iface.Cond, current bool) (r
 }
 
 func (c *emojiConfig) printAstro(astro iface.Astro) {
-        // print sun astronomy data if present
+	// print sun astronomy data if present
 	if astro.Sunrise != astro.Sunset {
-	    // half the distance between sunrise and sunset
-	    noon_distance := time.Duration(int64(float32(astro.Sunset.UnixNano() - astro.Sunrise.UnixNano()) * 0.5))
-	    // time for solar noon
-	    noon := astro.Sunrise.Add(noon_distance)
+		// half the distance between sunrise and sunset
+		noon_distance := time.Duration(int64(float32(astro.Sunset.UnixNano()-astro.Sunrise.UnixNano()) * 0.5))
+		// time for solar noon
+		noon := astro.Sunrise.Add(noon_distance)
 
-	    // the actual print statement
-	    fmt.Printf("🌞 rise↗ %s noon↑ %s set↘ %s\n", astro.Sunrise.Format(time.Kitchen), noon.Format(time.Kitchen), astro.Sunset.Format(time.Kitchen))
+		// the actual print statement
+		fmt.Printf("🌞 rise↗ %s noon↑ %s set↘ %s\n", astro.Sunrise.Format(time.Kitchen), noon.Format(time.Kitchen), astro.Sunset.Format(time.Kitchen))
 	}
-        // print moon astronomy data if present
+	// print moon astronomy data if present
 	if astro.Moonrise != astro.Moonset {
-	    fmt.Printf("🌚 rise↗ %s set↘ %s\n", astro.Moonrise.Format(time.Kitchen), astro.Moonset)
+		fmt.Printf("🌚 rise↗ %s set↘ %s\n", astro.Moonrise.Format(time.Kitchen), astro.Moonset)
 	}
 }
 
@@ -159,8 +159,8 @@ func (c *emojiConfig) printDay(day iface.Day) (ret []string) {
 func (c *emojiConfig) Setup() {
 }
 
-func (c *emojiConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
-	c.unit = unitSystem
+func (c *emojiConfig) Render(r iface.Data, units iface.Units) {
+	c.units = units
 
 	fmt.Printf("Weather for %s\n\n", r.Location)
 	stdout := colorable.NewColorableStdout()

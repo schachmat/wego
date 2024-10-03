@@ -18,10 +18,10 @@ import (
 type aatConfig struct {
 	coords     bool
 	monochrome bool
-	unit       iface.UnitSystem
+	units      iface.Units
 }
 
-//TODO: replace s parameter with printf interface?
+// TODO: replace s parameter with printf interface?
 func aatPad(s string, mustLen int) (ret string) {
 	ansiEsc := regexp.MustCompile("\033.*?m")
 	ret = s
@@ -61,11 +61,11 @@ func (c *aatConfig) formatTemp(cond iface.Cond) string {
 				break
 			}
 		}
-		t, _ := c.unit.Temp(temp)
+		t, _ := c.units.ConvertTemp(temp)
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(t))
 	}
 
-	_, u := c.unit.Temp(0.0)
+	_, u := c.units.ConvertTemp(0.0)
 
 	if cond.TempC == nil {
 		return aatPad(fmt.Sprintf("? %s", u), 15)
@@ -104,11 +104,11 @@ func (c *aatConfig) formatWind(cond iface.Cond) string {
 			}
 		}
 
-		s, _ := c.unit.Speed(spdKmph)
+		s, _ := c.units.ConvertSpeed(spdKmph)
 		return fmt.Sprintf("\033[38;5;%03dm%d\033[0m", col, int(s))
 	}
 
-	_, u := c.unit.Speed(0.0)
+	_, u := c.units.ConvertSpeed(0.0)
 
 	if cond.WindspeedKmph == nil {
 		return aatPad(windDir(cond.WinddirDegree), 15)
@@ -128,13 +128,13 @@ func (c *aatConfig) formatVisibility(cond iface.Cond) string {
 	if cond.VisibleDistM == nil {
 		return aatPad("", 15)
 	}
-	v, u := c.unit.Distance(*cond.VisibleDistM)
+	v, u := c.units.ConvertDistance(*cond.VisibleDistM)
 	return aatPad(fmt.Sprintf("%d %s", int(v), u), 15)
 }
 
 func (c *aatConfig) formatRain(cond iface.Cond) string {
 	if cond.PrecipM != nil {
-		v, u := c.unit.Distance(*cond.PrecipM)
+		v, u := c.units.ConvertDistance(*cond.PrecipM)
 		u += "/h" // it's the same in all unit systems
 		if cond.ChanceOfRainPercent != nil {
 			return aatPad(fmt.Sprintf("%.1f %s | %d%%", v, u, *cond.ChanceOfRainPercent), 15)
@@ -367,8 +367,8 @@ func (c *aatConfig) Setup() {
 	flag.BoolVar(&c.monochrome, "aat-monochrome", false, "aat-frontend: Monochrome output")
 }
 
-func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
-	c.unit = unitSystem
+func (c *aatConfig) Render(r iface.Data, units iface.Units) {
+	c.units = units
 
 	fmt.Printf("Weather for %s%s\n\n", r.Location, c.formatGeo(r.GeoLoc))
 	stdout := colorable.NewColorableStdout()
