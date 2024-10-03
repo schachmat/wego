@@ -17,7 +17,7 @@ func (c *jsnConfig) Setup() {
 	flag.BoolVar(&c.noIndent, "jsn-no-indent", false, "json frontend: do not indent the output")
 }
 
-func (c *jsnConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
+func (c *jsnConfig) Render(r iface.Data, units iface.Units) {
 	var b []byte
 	var err error
 	if c.noIndent {
