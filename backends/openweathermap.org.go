@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/schachmat/wego/iface"
 	"io"
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/schachmat/wego/iface"
 )
 
 type openWeatherConfig struct {
@@ -22,12 +24,12 @@ type openWeatherConfig struct {
 type openWeatherResponse struct {
 	Cod  string `json:"cod"`
 	City struct {
-		Name    string `json:"name"`
-		Country string `json:"country"`
-		TimeZone int64 `json: "timezone"`
+		Name     string `json:"name"`
+		Country  string `json:"country"`
+		TimeZone int64  `json: "timezone"`
 		// sunrise/sunset are once per call
 		SunRise int64 `json: "sunrise"`
-		SunSet int64 `json: "sunset"`
+		SunSet  int64 `json: "sunset"`
 	} `json:"city"`
 	List []dataBlock `json:"list"`
 }
@@ -53,6 +55,15 @@ type dataBlock struct {
 	Rain struct {
 		MM3h float32 `json:"3h"`
 	} `json:"rain"`
+}
+
+type openWeatherErrorReponse struct {
+	Code    any    `json:"cod"`
+	Message string `json:"message"`
+}
+
+func (e openWeatherErrorReponse) Error() string {
+	return fmt.Sprintf("Error Response from openweathermap.org (%v): %s", e.Code, e.Message)
 }
 
 const (
@@ -83,6 +94,11 @@ func (c *openWeatherConfig) fetch(url string) (*openWeatherResponse, error) {
 		fmt.Printf("Response (%s):\n%s\n", url, string(body))
 	}
 
+	if res.StatusCode != 200 {
+		err = openWeatherErrorReponseHandler(body, url)
+		return nil, err
+	}
+
 	var resp openWeatherResponse
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
@@ -91,6 +107,39 @@ func (c *openWeatherConfig) fetch(url string) (*openWeatherResponse, error) {
 		return nil, fmt.Errorf("Erroneous response body: %s", string(body))
 	}
 	return &resp, nil
+}
+
+func openWeatherErrorReponseHandler(body []byte, url string) error {
+	var resp openWeatherErrorReponse
+
+	if err := resp.UnmarshalJSON(body); err != nil {
+		return fmt.Errorf("Unable to unmarshal error response (%s): %v\nThe json body is: %s", url, err, string(body))
+	}
+
+	return resp
+}
+
+func (r *openWeatherErrorReponse) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Code    interface{} `json:"cod"`
+		Message string      `json:"message"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	switch v := raw.Code.(type) {
+	case string:
+		r.Code = v
+	case float64:
+		r.Code = strconv.Itoa(int(v))
+	default:
+		return fmt.Errorf("unexpected cod type")
+	}
+
+	r.Message = raw.Message
+	return nil
 }
 
 func (c *openWeatherConfig) parseDaily(dataInfo []dataBlock, numdays int) []iface.Day {
