@@ -121,7 +121,7 @@ func openWeatherErrorReponseHandler(body []byte, url string) error {
 
 func (r *openWeatherErrorReponse) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Cod     interface{} `json:"cod"`
+		Code    interface{} `json:"cod"`
 		Message string      `json:"message"`
 	}
 
@@ -129,7 +129,7 @@ func (r *openWeatherErrorReponse) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	switch v := raw.Cod.(type) {
+	switch v := raw.Code.(type) {
 	case string:
 		r.Code = v
 	case float64:
