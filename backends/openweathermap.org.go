@@ -58,12 +58,12 @@ type dataBlock struct {
 }
 
 type openWeatherErrorReponse struct {
-	Cod     any    `json:"cod"`
+	Code    any    `json:"cod"`
 	Message string `json:"message"`
 }
 
 func (e openWeatherErrorReponse) Error() string {
-	return fmt.Sprintf("Error Response from openweathermap.org (%v): %s", e.Cod, e.Message)
+	return fmt.Sprintf("Error Response from openweathermap.org (%v): %s", e.Code, e.Message)
 }
 
 const (
@@ -93,19 +93,20 @@ func (c *openWeatherConfig) fetch(url string) (*openWeatherResponse, error) {
 	if c.debug {
 		fmt.Printf("Response (%s):\n%s\n", url, string(body))
 	}
+
 	if res.StatusCode != 200 {
 		err = openWeatherErrorReponseHandler(body, url)
 		return nil, err
-	} else {
-		var resp openWeatherResponse
-		if err = json.Unmarshal(body, &resp); err != nil {
-			return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
-		}
-		if resp.Cod != "200" {
-			return nil, fmt.Errorf("Erroneous response body: %s", string(body))
-		}
-		return &resp, nil
 	}
+
+	var resp openWeatherResponse
+	if err = json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
+	}
+	if resp.Cod != "200" {
+		return nil, fmt.Errorf("Erroneous response body: %s", string(body))
+	}
+	return &resp, nil
 }
 
 func openWeatherErrorReponseHandler(body []byte, url string) error {
@@ -130,9 +131,9 @@ func (r *openWeatherErrorReponse) UnmarshalJSON(data []byte) error {
 
 	switch v := raw.Cod.(type) {
 	case string:
-		r.Cod = v
+		r.Code = v
 	case float64:
-		r.Cod = strconv.Itoa(int(v))
+		r.Code = strconv.Itoa(int(v))
 	default:
 		return fmt.Errorf("unexpected cod type")
 	}
