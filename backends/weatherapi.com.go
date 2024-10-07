@@ -121,9 +121,9 @@ var (
 )
 
 func (c *weatherApiConfig) Setup() {
-	flag.StringVar(&c.apiKey, "wth-api-key", "", "weatherapi backend: the api `Key` to use")
-	flag.StringVar(&c.lang, "wth-lang", "en", "weatherapi backend: the `LANGUAGE` to request from weatherapi")
-	flag.BoolVar(&c.debug, "wth-debug", false, "weatherapi backend: print raw requests and responses")
+	flag.StringVar(&c.apiKey, "weather-api-key", "", "weatherapi backend: the api `Key` to use")
+	flag.StringVar(&c.lang, "weather-lang", "en", "weatherapi backend: the `LANGUAGE` to request from weatherapi")
+	flag.BoolVar(&c.debug, "weather-debug", false, "weatherapi backend: print raw requests and responses")
 }
 
 func (c *weatherApiConfig) fetch(url string) (*weatherApiResponse, error) {

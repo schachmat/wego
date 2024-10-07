@@ -63,7 +63,7 @@ go install github.com/schachmat/wego@latest
     ```
       backend=weatherapi
       location=New York
-      wth-api-key=YOUR_WEATHERAPI_API_KEY_HERE
+      weather-api-key=YOUR_WEATHERAPI_API_KEY_HERE
     ```
 0. You may want to adjust other preferences like `days`, `units` and `…-lang` as
    well. Save the file.
