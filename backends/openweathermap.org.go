@@ -22,12 +22,12 @@ type openWeatherConfig struct {
 type openWeatherResponse struct {
 	Cod  string `json:"cod"`
 	City struct {
-		Name    string `json:"name"`
-		Country string `json:"country"`
-		TimeZone int64 `json: "timezone"`
+		Name     string `json:"name"`
+		Country  string `json:"country"`
+		TimeZone int64  `json: "timezone"`
 		// sunrise/sunset are once per call
 		SunRise int64 `json: "sunrise"`
-		SunSet int64 `json: "sunset"`
+		SunSet  int64 `json: "sunset"`
 	} `json:"city"`
 	List []dataBlock `json:"list"`
 }
