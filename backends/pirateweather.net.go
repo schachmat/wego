@@ -8,8 +8,6 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/schachmat/wego/iface"
@@ -67,20 +65,6 @@ func (c *PirateweatherConfig) Fetch(location string, numdays int) iface.Data {
 
 	res.Current = *weatherData.Currently.toCond()
 	weatherData.toForecast(&res)
-	log.Println("location", location)
-	splitResult := strings.Split(location, ",")
-	log.Println("latitude", splitResult[0])
-	log.Println("longitude", splitResult[1])
-	lat, err := strconv.ParseFloat(splitResult[0], 32)
-	log.Println("lat:", lat)
-	if err != nil {
-		panic(err)
-	}
-	lon, err := strconv.ParseFloat(splitResult[1], 32)
-	log.Println("lon:", lon)
-	if err != nil {
-		panic(err)
-	}
 
 	return res
 }
