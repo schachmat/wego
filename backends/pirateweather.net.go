@@ -34,6 +34,7 @@ func (c *PirateweatherConfig) Fetch(location string, numdays int) iface.Data {
 	}
 
 	res := iface.Data{}
+	res.Location = location
 	reqURI := fmt.Sprintf("%s/%s/%s?extend=hourly&units=si", pirateweatherURI, c.apiKey, location)
 	apiRes, err := http.Get(reqURI)
 	if err != nil {
@@ -64,7 +65,11 @@ func (c *PirateweatherConfig) Fetch(location string, numdays int) iface.Data {
 	}
 
 	res.Current = *weatherData.Currently.toCond()
-	weatherData.toForecast(&res)
+	weatherData.toForecast(&res, numdays)
+	latLon := &iface.LatLon{}
+	latLon.Latitude = weatherData.Latitude
+	latLon.Longitude = weatherData.Longitude
+	res.GeoLoc = latLon
 
 	return res
 }
@@ -108,41 +113,57 @@ func parseCond(comp *CondCompatible) *iface.Cond {
 	return cond
 }
 
-func (w *Pirateweather) toForecast(data *iface.Data) {
-	day1 := &iface.Day{}
-	day1.Slots = parseHourlyDataForSingleDay(0, 6, w.Hourly.Data)
-	day1.Date = day1.Slots[0].Time
-	data.Forecast = append(data.Forecast, *day1)
+func (w *Pirateweather) toForecast(data *iface.Data, numdays int) {
+	if numdays > 0 {
+		log.Println("1")
+		day1 := &iface.Day{}
+		day1.Slots = parseHourlyDataForSingleDay(0, 23, w.Hourly.Data)
+		day1.Date = day1.Slots[0].Time
+		data.Forecast = append(data.Forecast, *day1)
+	}
+	if numdays > 1 {
+		log.Println("2")
+		day2 := &iface.Day{}
+		day2.Slots = parseHourlyDataForSingleDay(24, 47, w.Hourly.Data)
+		day2.Date = day2.Slots[0].Time
+		data.Forecast = append(data.Forecast, *day2)
+	}
+	if numdays > 2 {
+		log.Println("3")
+		day3 := &iface.Day{}
+		day3.Slots = parseHourlyDataForSingleDay(48, 71, w.Hourly.Data)
+		day3.Date = day3.Slots[0].Time
+		data.Forecast = append(data.Forecast, *day3)
+	}
+	if numdays > 3 {
+		log.Println("4")
+		day4 := &iface.Day{}
+		day4.Slots = parseHourlyDataForSingleDay(72, 95, w.Hourly.Data)
+		day4.Date = day4.Slots[0].Time
+		data.Forecast = append(data.Forecast, *day4)
+	}
+	if numdays > 4 {
+		log.Println("5")
+		day5 := &iface.Day{}
+		day5.Slots = parseHourlyDataForSingleDay(96, 119, w.Hourly.Data)
+		day5.Date = day5.Slots[0].Time
+		data.Forecast = append(data.Forecast, *day5)
+	}
+	if numdays > 5 {
+		log.Println("6")
+		day6 := &iface.Day{}
+		day6.Slots = parseHourlyDataForSingleDay(120, 143, w.Hourly.Data)
+		day6.Date = day6.Slots[0].Time
+		data.Forecast = append(data.Forecast, *day6)
+	}
+	if numdays > 6 {
+		log.Println("7")
+		day7 := &iface.Day{}
+		day7.Slots = parseHourlyDataForSingleDay(144, 168, w.Hourly.Data)
+		day7.Date = day7.Slots[0].Time
+		data.Forecast = append(data.Forecast, *day7)
+	}
 
-	day2 := &iface.Day{}
-	day2.Slots = parseHourlyDataForSingleDay(7, 14, w.Hourly.Data)
-	day2.Date = day2.Slots[0].Time
-	data.Forecast = append(data.Forecast, *day2)
-
-	day3 := &iface.Day{}
-	day3.Slots = parseHourlyDataForSingleDay(15, 22, w.Hourly.Data)
-	day3.Date = day3.Slots[0].Time
-	data.Forecast = append(data.Forecast, *day3)
-
-	day4 := &iface.Day{}
-	day4.Slots = parseHourlyDataForSingleDay(23, 30, w.Hourly.Data)
-	day4.Date = day4.Slots[0].Time
-	data.Forecast = append(data.Forecast, *day4)
-
-	day5 := &iface.Day{}
-	day5.Slots = parseHourlyDataForSingleDay(31, 38, w.Hourly.Data)
-	day5.Date = day5.Slots[0].Time
-	data.Forecast = append(data.Forecast, *day5)
-
-	day6 := &iface.Day{}
-	day6.Slots = parseHourlyDataForSingleDay(39, 46, w.Hourly.Data)
-	day6.Date = day6.Slots[0].Time
-	data.Forecast = append(data.Forecast, *day6)
-
-	day7 := &iface.Day{}
-	day7.Slots = parseHourlyDataForSingleDay(47, 54, w.Hourly.Data)
-	day7.Date = day7.Slots[0].Time
-	data.Forecast = append(data.Forecast, *day7)
 }
 
 func weatherCodeFromPirateweatherIcon(weatherIcon PirateweatherIcon) iface.WeatherCode {
@@ -305,21 +326,6 @@ func (c *PirateweatherCurrently) toCond() *iface.Cond {
 	return parseCond(condComp)
 }
 
-type PirateweatherMinutelyData struct {
-	// The time in which the data point begins represented in UNIX time.
-	Time uint `json:"time"`
-	// The rate in which liquid precipitation is falling. This value is expressed in millimetres per hour or inches per hour depending on the requested units.
-	PrecipIntensity float32 `json:"precipIntensity"`
-	// The probability of precipitation occurring expressed as a decimal between 0 and 1 inclusive.
-	PrecipProbability float32 `json:"precipProbability"`
-	// The standard deviation of the precipIntensity from the GEFS model.
-	PrecipIntensityError float32 `json:"precipIntensityError"`
-	// The type of precipitation occurring.
-	// if precipintensity is greater than zero this property will have one of the following values:
-	// rain, snow or sleet otherwise the value will be none. sleet is defined as any precipitation which is neither rain nor snow.
-	PrecipType string `json:"precipType"`
-}
-
 type PirateweatherHourlyData struct {
 	// The time in which the data point begins represented in UNIX time.
 	Time uint `json:"time"`
@@ -396,6 +402,21 @@ func parseHourlyDataForSingleDay(lowerIndex, upperIndex int, data []Pirateweathe
 	}
 
 	return condArr
+}
+
+type PirateweatherMinutelyData struct {
+	// The time in which the data point begins represented in UNIX time.
+	Time uint `json:"time"`
+	// The rate in which liquid precipitation is falling. This value is expressed in millimetres per hour or inches per hour depending on the requested units.
+	PrecipIntensity float32 `json:"precipIntensity"`
+	// The probability of precipitation occurring expressed as a decimal between 0 and 1 inclusive.
+	PrecipProbability float32 `json:"precipProbability"`
+	// The standard deviation of the precipIntensity from the GEFS model.
+	PrecipIntensityError float32 `json:"precipIntensityError"`
+	// The type of precipitation occurring.
+	// if precipintensity is greater than zero this property will have one of the following values:
+	// rain, snow or sleet otherwise the value will be none. sleet is defined as any precipitation which is neither rain nor snow.
+	PrecipType string `json:"precipType"`
 }
 
 type PirateweatherDailyData struct {
