@@ -13,6 +13,7 @@ import (
 	_ "github.com/schachmat/wego/backends"
 	_ "github.com/schachmat/wego/frontends"
 	"github.com/schachmat/wego/iface"
+	geoloc "github.com/schachmat/wego/location"
 )
 
 func pluginLists() {
@@ -52,6 +53,8 @@ func main() {
 	flag.StringVar(selectedBackend, "b", "openweathermap", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
+	autoLocation := flag.Bool("auto-location", false, "automatically detect current location if no location is specified")
+	flag.BoolVar(autoLocation, "a", false, "automatically detect current location (shorthand)")
 
 	// print out a list of all backends and frontends in the usage
 	tmpUsage := flag.Usage
@@ -71,6 +74,16 @@ func main() {
 			*numdays = v
 		} else {
 			*location = arg
+		}
+	}
+
+	// auto-detect location if auto-location is enabled
+	if *autoLocation {
+		if geoLoc, err := geoloc.GetCurrentLocation(); err != nil {
+			log.Printf("Warning: Failed to auto-detect location (%v), keeping specified location", err)
+		} else {
+			*location = geoLoc.String()
+			log.Printf("Location auto-detected: %s, %s (%s)", geoLoc.City, geoLoc.Country, *location)
 		}
 	}
 
