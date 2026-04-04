@@ -73,8 +73,8 @@ type wwoConfig struct {
 }
 
 const (
-	wwoSuri = "https://api.worldweatheronline.com/free/v2/search.ashx?"
-	wwoWuri = "https://api.worldweatheronline.com/free/v2/weather.ashx?"
+	wwoSuri = "https://api.worldweatheronline.com/premium/v1/search.ashx?"
+	wwoWuri = "https://api.worldweatheronline.com/premium/v1/weather.ashx?"
 )
 
 func wwoParseCond(cond wwoCond, date time.Time) (ret iface.Cond) {
@@ -257,6 +257,11 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 	var coordResp wwoCoordinateResp
 	requri := wwoSuri + strings.Join(queryParams, "&")
 	hres, err := http.Get(requri)
+
+	if c.debug {
+		log.Println("Geo location request:", requri)
+	}
+
 	if err != nil {
 		log.Println("Unable to fetch geo location:", err)
 		res <- nil
@@ -269,6 +274,7 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 	defer hres.Body.Close()
 
 	body, err := io.ReadAll(hres.Body)
+
 	if err != nil {
 		log.Println("Unable to read geo location data:", err)
 		res <- nil
@@ -276,7 +282,6 @@ func (c *wwoConfig) getCoordinatesFromAPI(queryParams []string, res chan *iface.
 	}
 
 	if c.debug {
-		log.Println("Geo location request:", requri)
 		log.Println("Geo location response:", string(body))
 	}
 
