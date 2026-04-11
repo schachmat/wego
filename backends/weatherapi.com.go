@@ -132,12 +132,12 @@ func (c *weatherApiConfig) fetch(apiURL, safeURL string) (*weatherApiResponse, e
 	}
 	res, err := http.Get(apiURL)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get (%s) %v", safeURL, err)
+		return nil, fmt.Errorf("unable to get (%s) %v", safeURL, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read response body (%s): %v", safeURL, err)
+		return nil, fmt.Errorf("unable to read response body (%s): %v", safeURL, err)
 	}
 
 	if c.debug {
@@ -146,7 +146,7 @@ func (c *weatherApiConfig) fetch(apiURL, safeURL string) (*weatherApiResponse, e
 
 	var resp weatherApiResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", safeURL, err, string(body))
+		return nil, fmt.Errorf("unable to unmarshal response (%s): %v\nThe json body is: %s", safeURL, err, string(body))
 	}
 
 	return &resp, nil
