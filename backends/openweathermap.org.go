@@ -24,10 +24,10 @@ type openWeatherResponse struct {
 	City struct {
 		Name    string `json:"name"`
 		Country string `json:"country"`
-		TimeZone int64 `json: "timezone"`
+		TimeZone int64 `json:"timezone"`
 		// sunrise/sunset are once per call
-		SunRise int64 `json: "sunrise"`
-		SunSet int64 `json: "sunset"`
+		SunRise int64 `json:"sunrise"`
+		SunSet int64 `json:"sunset"`
 	} `json:"city"`
 	List []dataBlock `json:"list"`
 }
