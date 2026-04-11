@@ -5,7 +5,7 @@
 ## Features
 
 * show forecast for 1 to 7 days
-* multiple backends: `openweathermap`, `weatherapi`, `open-meteo`, `smhi`, `caiyun`, `worldweatheronline`, and `json`
+* multiple backends: `openweathermap`, `weatherapi`, `open-meteo`, `smhi`, `caiyun`, `worldweatheronline`, `pirateweather`, and `json`
 * multiple frontends: `ascii-art-table` (default), `emoji`, `markdown`, and `json`
 * displayed info:
   * temperature range ([felt](https://en.wikipedia.org/wiki/Wind_chill) and measured)
@@ -99,6 +99,14 @@ __[Worldweatheronline](http://www.worldweatheronline.com/)__ — no longer offer
 backend=worldweatheronline
 location=New York
 wwo-api-key=YOUR_WORLDWEATHERONLINE_API_KEY_HERE
+```
+
+__[Pirateweather](https://pirateweather.net/)__ — free API key available (requires lat,lon location):
+* [Sign up](https://pirateweather.net/getting-started) for a free API key.
+```
+backend=pirateweather.net
+location=40.71,-74.01
+pirateweather-api-key=YOUR_PIRATEWEATHER_API_KEY_HERE
 ```
 
 __JSON file__ — read weather data from a local JSON file (useful for testing or offline use):
