@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/schachmat/wego/iface"
@@ -127,14 +126,11 @@ func (c *weatherApiConfig) Setup() {
 	flag.BoolVar(&c.debug, "weather-api-debug", false, "weatherapi backend: print raw requests and responses")
 }
 
-func (c *weatherApiConfig) fetch(url string) (*weatherApiResponse, error) {
-	// Build a redacted URL for safe use in error messages and debug output
-	safeURL := strings.Replace(url, c.apiKey, "REDACTED", 1)
-
+func (c *weatherApiConfig) fetch(apiURL, safeURL string) (*weatherApiResponse, error) {
 	if c.debug {
 		fmt.Printf("Fetching %s\n", safeURL)
 	}
-	res, err := http.Get(url)
+	res, err := http.Get(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get (%s) %v", safeURL, err)
 	}
@@ -226,7 +222,10 @@ func (c *weatherApiConfig) Fetch(location string, numdays int) iface.Data {
 		log.Fatal("No weatherapi.com API key specified.\nYou have to register for one at https://weatherapi.com/signup.aspx")
 	}
 
-	resp, err := c.fetch(fmt.Sprintf(weatherApiURI, c.apiKey, location, strconv.Itoa(numdays), c.lang))
+	resp, err := c.fetch(
+		fmt.Sprintf(weatherApiURI, c.apiKey, location, strconv.Itoa(numdays), c.lang),
+		fmt.Sprintf(weatherApiURI, "REDACTED", location, strconv.Itoa(numdays), c.lang),
+	)
 	if err != nil {
 		log.Fatalf("Failed to fetch weather data: %v\n", err)
 	}
