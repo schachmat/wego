@@ -102,15 +102,15 @@ func parsePirateweatherCond(comp *pirateweatherCondFields) *iface.Cond {
 	cond.FeelsLikeC = &comp.ApparentTemperature
 	chanceOfRainPercent := int(math.Floor(float64(comp.PrecipProbability * 100.0)))
 	cond.ChanceOfRainPercent = &chanceOfRainPercent
-	// precipIntensity is in mm/h (SI units), PrecipM expects m/h
+	// precipIntensity is in mm/h (SI units); 1 mm = 0.001 m, so divide by 1000 to get m/h
 	precipM := comp.PrecipIntensity / 1000.0
 	cond.PrecipM = &precipM
-	// visibility is in km (SI units), VisibleDistM expects meters
-	visibilityDistM := comp.Visibility * 1000.0
-	cond.VisibleDistM = &visibilityDistM
-	// windSpeed is in m/s (SI units), WindspeedKmph expects km/h
-	windspeedKmph := comp.WindSpeed * 3.6
-	cond.WindspeedKmph = &windspeedKmph
+	// visibility is in km (SI units); multiply by 1000 to get meters
+	visibilityM := comp.Visibility * 1000.0
+	cond.VisibleDistM = &visibilityM
+	// windSpeed is in m/s (SI units); multiply by 3.6 to get km/h
+	windSpeedKmph := comp.WindSpeed * 3.6
+	cond.WindspeedKmph = &windSpeedKmph
 	windGustKmph := comp.WindGust * 3.6
 	cond.WindGustKmph = &windGustKmph
 	winddirDegree := int(comp.WindBearing)
