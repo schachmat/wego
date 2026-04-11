@@ -165,7 +165,7 @@ func (c *smhiConfig) parseForecast(response *smhiResponse, numDays int) (days []
 }
 
 func (c *smhiConfig) parseCurrent(forecast *smhiResponse) (cnd iface.Cond) {
-	if len(forecast.TimeSeries) < 0 {
+	if len(forecast.TimeSeries) == 0 {
 		log.Fatalln("Failed to fetch weather data: No Forecast in response")
 	}
 	var currentPrediction *smhiTimeSeries = forecast.TimeSeries[0]

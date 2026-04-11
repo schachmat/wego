@@ -207,19 +207,17 @@ func (c *openWeatherConfig) parseCond(dataInfo dataBlock) (iface.Cond, error) {
 	ret.Humidity = &(dataInfo.Main.Humidity)
 	ret.TempC = &(dataInfo.Main.TempC)
 	ret.FeelsLikeC = &(dataInfo.Main.FeelsLikeC)
-	if &dataInfo.Wind.Deg != nil {
-		p := int(dataInfo.Wind.Deg)
-		ret.WinddirDegree = &p
-	}
-	if &(dataInfo.Wind.Speed) != nil && (dataInfo.Wind.Speed) > 0 {
-		windSpeed := (dataInfo.Wind.Speed * 3.6)
-		ret.WindspeedKmph = &(windSpeed)
+	p := int(dataInfo.Wind.Deg)
+	ret.WinddirDegree = &p
+	if dataInfo.Wind.Speed > 0 {
+		windSpeed := dataInfo.Wind.Speed * 3.6
+		ret.WindspeedKmph = &windSpeed
 	}
 	if val, ok := codemap[dataInfo.Weather[0].ID]; ok {
 		ret.Code = val
 	}
 
-	if &dataInfo.Rain.MM3h != nil {
+	if dataInfo.Rain.MM3h > 0 {
 		mmh := (dataInfo.Rain.MM3h / 1000) / 3
 		ret.PrecipM = &mmh
 	}
