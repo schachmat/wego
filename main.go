@@ -1,19 +1,69 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/schachmat/ingo"
 	_ "github.com/schachmat/wego/backends"
 	_ "github.com/schachmat/wego/frontends"
 	"github.com/schachmat/wego/iface"
 )
+
+type cacheEntry struct {
+	Expires time.Time  `json:"expires"`
+	Data    iface.Data `json:"data"`
+}
+
+func cacheFilePath(backend, location string, numdays int) string {
+	key := fmt.Sprintf("%s|%s|%d", backend, location, numdays)
+	hash := sha256.Sum256([]byte(key))
+	return filepath.Join(os.TempDir(), fmt.Sprintf("wego-cache-%x.json", hash))
+}
+
+func loadCache(path string) (iface.Data, bool) {
+	f, err := os.Open(path)
+	if err != nil {
+		return iface.Data{}, false
+	}
+	defer f.Close()
+
+	var entry cacheEntry
+	if err := json.NewDecoder(f).Decode(&entry); err != nil {
+		return iface.Data{}, false
+	}
+	if time.Now().After(entry.Expires) {
+		return iface.Data{}, false
+	}
+	return entry.Data, true
+}
+
+func saveCache(path string, data iface.Data, ttl time.Duration) {
+	entry := cacheEntry{
+		Expires: time.Now().Add(ttl),
+		Data:    data,
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		log.Printf("Warning: could not write cache file %s: %v", path, err)
+		return
+	}
+	defer f.Close()
+	if err := json.NewEncoder(f).Encode(entry); err != nil {
+		log.Printf("Warning: could not encode cache data to %s: %v", path, err)
+		f.Close()
+		os.Remove(path)
+	}
+}
 
 func pluginLists() {
 	bEnds := make([]string, 0, len(iface.AllBackends))
@@ -52,6 +102,7 @@ func main() {
 	flag.StringVar(selectedBackend, "b", "openweathermap", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
+	cacheTTL := flag.Duration("cache-ttl", time.Hour, "`DURATION` to cache weather data on disk (0 to disable)")
 
 	// print out a list of all backends and frontends in the usage
 	tmpUsage := flag.Usage
@@ -79,7 +130,19 @@ func main() {
 	if !ok {
 		log.Fatalf("Could not find selected backend \"%s\"", *selectedBackend)
 	}
-	r := be.Fetch(*location, *numdays)
+
+	var r iface.Data
+	cachePath := cacheFilePath(*selectedBackend, *location, *numdays)
+	if *cacheTTL > 0 {
+		if cached, hit := loadCache(cachePath); hit {
+			r = cached
+		} else {
+			r = be.Fetch(*location, *numdays)
+			saveCache(cachePath, r, *cacheTTL)
+		}
+	} else {
+		r = be.Fetch(*location, *numdays)
+	}
 
 	// set unit system
 	unit := iface.UnitsMetric
