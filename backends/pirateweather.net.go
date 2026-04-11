@@ -189,7 +189,7 @@ type pirateweather struct {
 	// The timezone offset in hours
 	Offset float32 `json:"offset"`
 	// The height above sea level in meters the requested location is
-	Elevation uint `json:"elevation"`
+	Elevation int `json:"elevation"`
 	// A block containing the current weather information for the requested location
 	Currently pirateweatherCurrently `json:"currently"`
 	// A block containing the minute-by-minute precipitation intensity for the 60 minutes.
@@ -218,7 +218,7 @@ type pirateweather struct {
 		// The models used to generate the forecast.
 		Sources []string `json:"sources"`
 		// Not implemented, and will always return 0.
-		NearestStation uint `json:"nearest-station"`
+		NearestStation int `json:"nearest-station"`
 		// Indicates which units were used in the forecasts.
 		Units string `json:"units"`
 		// The version of Pirate Weather used to generate the forecast.
