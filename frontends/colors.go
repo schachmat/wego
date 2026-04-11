@@ -1,10 +1,25 @@
 package frontends
 
 import (
+	"flag"
 	"os"
 	"strconv"
 	"strings"
 )
+
+var monochrome bool
+
+func init() {
+	flag.BoolVar(&monochrome, "monochrome", false, "Monochrome output")
+}
+
+// isMonochrome returns true if color output should be disabled, either because
+// the --monochrome flag was set or because the NO_COLOR environment variable
+// (https://no-color.org/) is present.
+func isMonochrome() bool {
+	_, noColorSet := os.LookupEnv("NO_COLOR")
+	return monochrome || noColorSet
+}
 
 // darkBackground returns true if the terminal likely has a dark background.
 // It checks the COLORFGBG environment variable which is set by some terminals
