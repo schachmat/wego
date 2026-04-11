@@ -5,7 +5,7 @@
 ## Features
 
 * show forecast for 1 to 7 days
-* multiple backends: `openweathermap`, `weatherapi`, `open-meteo`, `smhi`, `caiyun`, `worldweatheronline`, and `json`
+* multiple backends: `openweathermap`, `weatherapi`, `open-meteo`, `smhi`, `caiyun`, `worldweatheronline`, `pirateweather`, and `json`
 * multiple frontends: `ascii-art-table` (default), `emoji`, `markdown`, and `json`
 * displayed info:
   * temperature range ([felt](https://en.wikipedia.org/wiki/Wind_chill) and measured)
@@ -106,6 +106,14 @@ location=New York
 wwo-api-key=YOUR_WORLDWEATHERONLINE_API_KEY_HERE
 ```
 
+__[Pirateweather](https://pirateweather.net/)__ — free API key available (requires lat,lon location):
+* [Sign up](https://pirateweather.net/getting-started) for a free API key.
+```
+backend=pirateweather.net
+location=40.71,-74.01
+pirateweather-api-key=YOUR_PIRATEWEATHER_API_KEY_HERE
+```
+
 __JSON file__ — read weather data from a local JSON file (useful for testing or offline use):
 ```
 backend=json
@@ -124,3 +132,18 @@ Select a frontend with the `--frontend` flag or by setting `frontend=…` in `.w
 | `json` | JSON output, suitable for piping to other tools. |
 
 Example: `wego --frontend emoji London`
+
+### Color Configuration
+
+Both `ascii-art-table` and `emoji` frontends display temperatures and wind
+speeds in color by default. To disable colors:
+
+* Pass `--monochrome` as a flag, or add it to `.wegorc` to make it permanent:
+  ```
+  monochrome=true
+  ```
+* Set the `NO_COLOR` environment variable (see [no-color.org](https://no-color.org/))
+  to disable colors without changing the config:
+  ```shell
+  NO_COLOR=1 wego
+  ```

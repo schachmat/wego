@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"time"
 
 	colorable "github.com/mattn/go-colorable"
@@ -173,6 +174,9 @@ func (c *emojiConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 
 	fmt.Printf("Weather for %s\n\n", r.Location)
 	stdout := colorable.NewColorableStdout()
+	if isMonochrome() {
+		stdout = colorable.NewNonColorable(os.Stdout)
+	}
 
 	out := c.formatCond(make([]string, 5), r.Current, true)
 	for _, val := range out {
