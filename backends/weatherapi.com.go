@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/schachmat/wego/iface"
@@ -127,26 +128,29 @@ func (c *weatherApiConfig) Setup() {
 }
 
 func (c *weatherApiConfig) fetch(url string) (*weatherApiResponse, error) {
-	res, err := http.Get(url)
+	// Build a redacted URL for safe use in error messages and debug output
+	safeURL := strings.Replace(url, c.apiKey, "REDACTED", 1)
+
 	if c.debug {
-		fmt.Printf("Fetching %s\n", url)
+		fmt.Printf("Fetching %s\n", safeURL)
 	}
+	res, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get (%s) %v", url, err)
+		return nil, fmt.Errorf("Unable to get (%s) %v", safeURL, err)
 	}
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read response body (%s): %v", url, err)
+		return nil, fmt.Errorf("Unable to read response body (%s): %v", safeURL, err)
 	}
 
 	if c.debug {
-		fmt.Printf("Response (%s):\n%s\n", url, string(body))
+		fmt.Printf("Response (%s):\n%s\n", safeURL, string(body))
 	}
 
 	var resp weatherApiResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", url, err, string(body))
+		return nil, fmt.Errorf("Unable to unmarshal response (%s): %v\nThe json body is: %s", safeURL, err, string(body))
 	}
 
 	return &resp, nil
