@@ -1,7 +1,6 @@
 package frontends
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -14,8 +13,7 @@ import (
 )
 
 type emojiConfig struct {
-	monochrome bool
-	unit       iface.UnitSystem
+	unit iface.UnitSystem
 }
 
 func (c *emojiConfig) formatTemp(cond iface.Cond) string {
@@ -169,7 +167,6 @@ func (c *emojiConfig) printDay(day iface.Day) (ret []string) {
 }
 
 func (c *emojiConfig) Setup() {
-	flag.BoolVar(&c.monochrome, "emoji-monochrome", false, "emoji-frontend: Monochrome output")
 }
 
 func (c *emojiConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
@@ -177,7 +174,7 @@ func (c *emojiConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 
 	fmt.Printf("Weather for %s\n\n", r.Location)
 	stdout := colorable.NewColorableStdout()
-	if c.monochrome || noColor() {
+	if isMonochrome() {
 		stdout = colorable.NewNonColorable(os.Stdout)
 	}
 
