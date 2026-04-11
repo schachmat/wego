@@ -45,16 +45,25 @@ func aatPad(s string, mustLen int) (ret string) {
 }
 
 func (c *aatConfig) formatTemp(cond iface.Cond) string {
-	color := func(temp float32) string {
-		colmap := []struct {
-			maxtemp float32
-			color   int
-		}{
-			{-15, 21}, {-12, 27}, {-9, 33}, {-6, 39}, {-3, 45},
-			{0, 51}, {2, 50}, {4, 49}, {6, 48}, {8, 47},
-			{10, 46}, {13, 82}, {16, 118}, {19, 154}, {22, 190},
-			{25, 226}, {28, 220}, {31, 214}, {34, 208}, {37, 202},
+	colmap := []struct {
+		maxtemp float32
+		color   int
+	}{
+		{-15, 21}, {-12, 27}, {-9, 33}, {-6, 39}, {-3, 45},
+		{0, 51}, {2, 50}, {4, 49}, {6, 48}, {8, 47},
+		{10, 46}, {13, 82}, {16, 118}, {19, 154}, {22, 190},
+		{25, 226}, {28, 220}, {31, 214}, {34, 208}, {37, 202},
+	}
+	if darkBackground() {
+		// On dark terminals the deep-blue palette entries (21, 27) have very
+		// low contrast against the background and are nearly invisible.
+		// Shift the cold-temperature entries to brighter cyan-blue shades.
+		brightColdColors := []int{33, 39, 45, 51, 51}
+		for i, c := range brightColdColors {
+			colmap[i].color = c
 		}
+	}
+	color := func(temp float32) string {
 
 		col := 196
 		for _, candidate := range colmap {
