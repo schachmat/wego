@@ -42,9 +42,11 @@ go install github.com/schachmat/wego@latest
 
 ## Setup
 
-0. Run `wego` once. You will get an error message, but the `.wegorc` config file
-   will be generated in your `$HOME` directory (it will be hidden in some file
-   managers due to the filename starting with a dot).
+0. Run `wego` once. You will get an error message, but the `wegorc` config file
+   will be generated in your `$XDG_CONFIG_HOME/wego/` directory (or the
+   OS-equivalent location returned by
+   [`os.UserConfigDir()`](https://pkg.go.dev/os#UserConfigDir), e.g.
+   `~/.config/wego/wegorc` on Linux).
 0. Choose a backend and configure it (see below). Then run `wego` again.
 0. You may want to adjust other preferences like `days`, `units` and `…-lang` as
    well. Save the file.
@@ -54,8 +56,11 @@ go install github.com/schachmat/wego@latest
    London` or `wego London 4` (the ordering of arguments makes no difference) to
    get the forecast for the current and the next 3 days.
 
-You can set the `$WEGORC` environment variable to override the default config
-file location.
+The config file is resolved in the following order:
+1. `$WEGORC` environment variable (highest precedence).
+2. `$XDG_CONFIG_HOME/wego/wegorc` (or OS equivalent via `os.UserConfigDir()`), if it exists.
+3. `$HOME/.wegorc` (legacy location, for backward compatibility), if it exists.
+4. If none of the above exist, a new config file is created at `$XDG_CONFIG_HOME/wego/wegorc`.
 
 ### Backends
 

@@ -27,6 +27,54 @@ type cacheEntry struct {
 	Data    iface.Data `json:"data"`
 }
 
+// resolveConfigPath determines the config file path following this priority:
+//  1. $WEGORC environment variable (highest precedence)
+//  2. os.UserConfigDir()/wego/wegorc (if it exists)
+//  3. $HOME/.wegorc (backward compatibility, if it exists)
+//  4. os.UserConfigDir()/wego/wegorc (new default, directory is created)
+func resolveConfigPath() (string, error) {
+	// 1. $WEGORC env variable takes highest precedence
+	if p := os.Getenv("WEGORC"); p != "" {
+		return p, nil
+	}
+
+	// Get UserConfigDir for steps 2 and 4
+	userConfigDir, userConfigDirErr := os.UserConfigDir()
+
+	// 2. Try os.UserConfigDir()/wego/wegorc if it exists
+	if userConfigDirErr == nil {
+		xdgPath := filepath.Join(userConfigDir, "wego", "wegorc")
+		if _, err := os.Stat(xdgPath); err == nil {
+			return xdgPath, nil
+		}
+	}
+
+	// 3. Try $HOME/.wegorc for backward compatibility
+	if home, err := os.UserHomeDir(); err == nil {
+		legacyPath := filepath.Join(home, ".wegorc")
+		if _, err := os.Stat(legacyPath); err == nil {
+			return legacyPath, nil
+		}
+	}
+
+	// 4. Neither found - use os.UserConfigDir()/wego/wegorc as the new default
+	if userConfigDirErr != nil {
+		// Fall back to $HOME/.wegorc if UserConfigDir is unavailable
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("could not determine config directory: %v", err)
+		}
+		return filepath.Join(home, ".wegorc"), nil
+	}
+
+	const configDirPermissions = 0755
+	xdgPath := filepath.Join(userConfigDir, "wego", "wegorc")
+	if err := os.MkdirAll(filepath.Dir(xdgPath), configDirPermissions); err != nil {
+		return "", fmt.Errorf("could not create config directory %s: %v", filepath.Dir(xdgPath), err)
+	}
+	return xdgPath, nil
+}
+
 func cacheFilePath(backend, location string, numdays int) string {
 	key := fmt.Sprintf("%s|%s|%d", backend, location, numdays)
 	hash := sha256.Sum256([]byte(key))
@@ -128,10 +176,13 @@ func main() {
 			manPage := mango.NewManPage(1, "wego", "display the weather in your terminal").
 				WithLongDescription("wego is a weather client for the terminal that shows "+
 					"the current and forecasted weather conditions using various backends.\n"+
-					"Configuration is stored in a config file (default: ~/.wegorc) and can "+
-					"also be provided via command-line flags.\n"+
+					"Configuration is stored in a config file and can also be provided via command-line flags.\n"+
 					"A backend API key is required for most backends.").
-				WithSection("Configuration", "wego stores its configuration in ~/.wegorc by default. "+
+				WithSection("Configuration", "wego looks for its configuration file in the following order: "+
+					"1. $WEGORC environment variable. "+
+					"2. $XDG_CONFIG_HOME/wego/wegorc (or the OS equivalent via os.UserConfigDir). "+
+					"3. $HOME/.wegorc (legacy location, for backward compatibility). "+
+					"If no config file is found, a new one is created at $XDG_CONFIG_HOME/wego/wegorc. "+
 					"The config file is created on the first run with default values. "+
 					"Each flag listed below corresponds to a config file key. "+
 					"Command-line flags take precedence over config file values.").
@@ -143,6 +194,16 @@ func main() {
 	}
 
 	// read/write config and parse flags
+	configPath, err := resolveConfigPath()
+	if err != nil {
+		log.Fatalf("Error determining config file path: %v", err)
+	}
+	// ingo reads the WEGORC environment variable to determine the config file
+	// path. We set it here so that our resolved path (including XDG/legacy
+	// fallback logic) is used rather than ingo's built-in $HOME/.wegorc default.
+	if err := os.Setenv("WEGORC", configPath); err != nil {
+		log.Fatalf("Error setting WEGORC environment variable: %v", err)
+	}
 	if err := ingo.Parse("wego"); err != nil {
 		log.Fatalf("Error parsing config: %v", err)
 	}
