@@ -180,9 +180,9 @@ func (c *weatherApiConfig) parseCond(forecastInfo hourlyWeather) (iface.Cond, er
 
 	ret.Code = iface.CodeUnknown
 	ret.Desc = forecastInfo.Condition.Desc
-	ret.Humidity = &(forecastInfo.Humidity)
-	ret.TempC = &(forecastInfo.TempC)
-	ret.FeelsLikeC = &(forecastInfo.FeelsLikeC)
+	ret.Humidity = &forecastInfo.Humidity
+	ret.TempC = &forecastInfo.TempC
+	ret.FeelsLikeC = &forecastInfo.FeelsLikeC
 	ret.WindspeedKmph = forecastInfo.WindspeedKmph
 	ret.WinddirDegree = &forecastInfo.WinddirDegree
 	ret.ChanceOfRainPercent = &forecastInfo.ChanceOfRainPercent
@@ -201,9 +201,9 @@ func (c *weatherApiConfig) parseCurCond(forecastInfo currentCond) (iface.Cond, e
 
 	ret.Code = iface.CodeUnknown
 	ret.Desc = forecastInfo.Condition.Desc
-	ret.Humidity = &(forecastInfo.Humidity)
-	ret.TempC = &(forecastInfo.TempC)
-	ret.FeelsLikeC = &(forecastInfo.FeelsLikeC)
+	ret.Humidity = &forecastInfo.Humidity
+	ret.TempC = &forecastInfo.TempC
+	ret.FeelsLikeC = &forecastInfo.FeelsLikeC
 	ret.WindspeedKmph = forecastInfo.WindspeedKmph
 	ret.WinddirDegree = &forecastInfo.WinddirDegree
 	ret.ChanceOfRainPercent = &forecastInfo.ChanceOfRainPercent
