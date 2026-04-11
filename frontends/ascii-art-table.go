@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattn/go-colorable"
-	"github.com/mattn/go-runewidth"
+	colorable "github.com/mattn/go-colorable"
+	runewidth "github.com/mattn/go-runewidth"
 	"github.com/schachmat/wego/iface"
 )
 
