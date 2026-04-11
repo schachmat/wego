@@ -113,7 +113,7 @@ func openWeatherErrorReponseHandler(body []byte, url string) error {
 	var resp openWeatherErrorReponse
 
 	if err := resp.UnmarshalJSON(body); err != nil {
-		return fmt.Errorf("Unable to unmarshal error response (%s): %v\nThe json body is: %s", url, err, string(body))
+		return fmt.Errorf("unable to unmarshal error response (%s): %v\nThe json body is: %s", url, err, string(body))
 	}
 
 	return resp
