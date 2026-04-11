@@ -44,7 +44,12 @@ func (c *pirateweatherConfig) Fetch(location string, numdays int) iface.Data {
 	if err != nil {
 		log.Fatalf("Failed to fetch pirateweather data: %v\n", err)
 	}
-	defer apiRes.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("Failed to close pirateweather response body:", err)
+		}
+	}(apiRes.Body)
 
 	body, err := io.ReadAll(apiRes.Body)
 	if err != nil {
@@ -218,7 +223,7 @@ type pirateweather struct {
 		// The models used to generate the forecast.
 		Sources []string `json:"sources"`
 		// Not implemented, and will always return 0.
-		NearestStation int `json:"nearest-station"`
+		NearestStation float64 `json:"nearest-station"`
 		// Indicates which units were used in the forecasts.
 		Units string `json:"units"`
 		// The version of Pirate Weather used to generate the forecast.
