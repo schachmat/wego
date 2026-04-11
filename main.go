@@ -13,6 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/muesli/mango"
+	"github.com/muesli/mango/mflag"
+	"github.com/muesli/roff"
 	"github.com/schachmat/ingo"
 	_ "github.com/schachmat/wego/backends"
 	_ "github.com/schachmat/wego/frontends"
@@ -35,7 +38,7 @@ func loadCache(path string) (iface.Data, bool) {
 	if err != nil {
 		return iface.Data{}, false
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var entry cacheEntry
 	if err := json.NewDecoder(f).Decode(&entry); err != nil {
@@ -57,11 +60,17 @@ func saveCache(path string, data iface.Data, ttl time.Duration) {
 		log.Printf("Warning: could not write cache file %s: %v", path, err)
 		return
 	}
-	defer f.Close()
-	if err := json.NewEncoder(f).Encode(entry); err != nil {
-		log.Printf("Warning: could not encode cache data to %s: %v", path, err)
-		f.Close()
-		os.Remove(path)
+	encErr := json.NewEncoder(f).Encode(entry)
+	closeErr := f.Close()
+	if encErr != nil || closeErr != nil {
+		if encErr != nil {
+			log.Printf("Warning: could not encode cache data to %s: %v", path, encErr)
+		} else {
+			log.Printf("Warning: could not close cache file %s: %v", path, closeErr)
+		}
+		if removeErr := os.Remove(path); removeErr != nil {
+			log.Printf("Warning: could not remove corrupt cache file %s: %v", path, removeErr)
+		}
 	}
 }
 
@@ -102,6 +111,7 @@ func main() {
 	flag.StringVar(selectedBackend, "b", "openweathermap", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
+	flag.Bool("man", false, "Generate man page and print to stdout")
 	cacheTTL := flag.Duration("cache-ttl", time.Hour, "`DURATION` to cache weather data on disk (0 to disable)")
 
 	// print out a list of all backends and frontends in the usage
@@ -109,6 +119,27 @@ func main() {
 	flag.Usage = func() {
 		tmpUsage()
 		pluginLists()
+	}
+
+	// generate and print man page if requested, before config parsing so that
+	// a missing or malformed config file does not prevent the man page from showing
+	for _, arg := range os.Args[1:] {
+		if arg == "-man" || arg == "--man" {
+			manPage := mango.NewManPage(1, "wego", "display the weather in your terminal").
+				WithLongDescription("wego is a weather client for the terminal that shows "+
+					"the current and forecasted weather conditions using various backends.\n"+
+					"Configuration is stored in a config file (default: ~/.wegorc) and can "+
+					"also be provided via command-line flags.\n"+
+					"A backend API key is required for most backends.").
+				WithSection("Configuration", "wego stores its configuration in ~/.wegorc by default. "+
+					"The config file is created on the first run with default values. "+
+					"Each flag listed below corresponds to a config file key. "+
+					"Command-line flags take precedence over config file values.").
+				WithSection("Copyright", "(C) The wego contributors.\nReleased under ISC license.")
+			flag.VisitAll(mflag.FlagVisitor(manPage))
+			fmt.Println(manPage.Build(roff.NewDocument()))
+			os.Exit(0)
+		}
 	}
 
 	// read/write config and parse flags
