@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/muesli/mango"
+	"github.com/muesli/mango/mflag"
+	"github.com/muesli/roff"
 	"github.com/schachmat/ingo"
 	_ "github.com/schachmat/wego/backends"
 	_ "github.com/schachmat/wego/frontends"
@@ -52,12 +55,34 @@ func main() {
 	flag.StringVar(selectedBackend, "b", "openweathermap", "`BACKEND` to be used (shorthand)")
 	selectedFrontend := flag.String("frontend", "ascii-art-table", "`FRONTEND` to be used")
 	flag.StringVar(selectedFrontend, "f", "ascii-art-table", "`FRONTEND` to be used (shorthand)")
+	flag.Bool("man", false, "Generate man page and print to stdout")
 
 	// print out a list of all backends and frontends in the usage
 	tmpUsage := flag.Usage
 	flag.Usage = func() {
 		tmpUsage()
 		pluginLists()
+	}
+
+	// generate and print man page if requested, before config parsing so that
+	// a missing or malformed config file does not prevent the man page from showing
+	for _, arg := range os.Args[1:] {
+		if arg == "-man" || arg == "--man" {
+			manPage := mango.NewManPage(1, "wego", "display the weather in your terminal").
+				WithLongDescription("wego is a weather client for the terminal that shows "+
+					"the current and forecasted weather conditions using various backends.\n"+
+					"Configuration is stored in a config file (default: ~/.wegorc) and can "+
+					"also be provided via command-line flags.\n"+
+					"A backend API key is required for most backends.").
+				WithSection("Configuration", "wego stores its configuration in ~/.wegorc by default. "+
+					"The config file is created on the first run with default values. "+
+					"Each flag listed below corresponds to a config file key. "+
+					"Command-line flags take precedence over config file values.").
+				WithSection("Copyright", "(C) The wego contributors.\nReleased under ISC license.")
+			flag.VisitAll(mflag.FlagVisitor(manPage))
+			fmt.Println(manPage.Build(roff.NewDocument()))
+			os.Exit(0)
+		}
 	}
 
 	// read/write config and parse flags
