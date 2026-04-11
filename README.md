@@ -119,3 +119,19 @@ Select a frontend with the `--frontend` flag or by setting `frontend=…` in `.w
 | `json` | JSON output, suitable for piping to other tools. |
 
 Example: `wego --frontend emoji London`
+
+### Color Configuration
+
+Both `ascii-art-table` and `emoji` frontends display temperatures and wind
+speeds in color by default. To disable colors:
+
+* Pass `--aat-monochrome` (for `ascii-art-table`) or `--emoji-monochrome`
+  (for `emoji`) as a flag or add it to `.wegorc`:
+  ```
+  aat-monochrome=true
+  ```
+* Set the `NO_COLOR` environment variable (see [no-color.org](https://no-color.org/))
+  to disable colors in all frontends regardless of the flag:
+  ```shell
+  NO_COLOR=1 wego
+  ```

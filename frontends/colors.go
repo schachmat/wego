@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+// noColor returns true if color output should be disabled. It checks the
+// NO_COLOR environment variable (https://no-color.org/): when set to any
+// value, color output is suppressed regardless of terminal capabilities.
+func noColor() bool {
+	_, set := os.LookupEnv("NO_COLOR")
+	return set
+}
+
 // darkBackground returns true if the terminal likely has a dark background.
 // It checks the COLORFGBG environment variable which is set by some terminals
 // (e.g. rxvt, xterm). The variable's format is "foreground;background" or

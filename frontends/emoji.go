@@ -1,9 +1,11 @@
 package frontends
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"time"
 
 	colorable "github.com/mattn/go-colorable"
@@ -12,7 +14,8 @@ import (
 )
 
 type emojiConfig struct {
-	unit iface.UnitSystem
+	monochrome bool
+	unit       iface.UnitSystem
 }
 
 func (c *emojiConfig) formatTemp(cond iface.Cond) string {
@@ -166,6 +169,7 @@ func (c *emojiConfig) printDay(day iface.Day) (ret []string) {
 }
 
 func (c *emojiConfig) Setup() {
+	flag.BoolVar(&c.monochrome, "emoji-monochrome", false, "emoji-frontend: Monochrome output")
 }
 
 func (c *emojiConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
@@ -173,6 +177,9 @@ func (c *emojiConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 
 	fmt.Printf("Weather for %s\n\n", r.Location)
 	stdout := colorable.NewColorableStdout()
+	if c.monochrome || noColor() {
+		stdout = colorable.NewNonColorable(os.Stdout)
+	}
 
 	out := c.formatCond(make([]string, 5), r.Current, true)
 	for _, val := range out {

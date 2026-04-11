@@ -413,7 +413,7 @@ func (c *aatConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 
 	fmt.Printf("Weather for %s%s\n\n", r.Location, c.formatGeo(r.GeoLoc))
 	stdout := colorable.NewColorableStdout()
-	if c.monochrome {
+	if c.monochrome || noColor() {
 		stdout = colorable.NewNonColorable(os.Stdout)
 	}
 
