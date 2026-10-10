@@ -19,19 +19,26 @@ const (
 )
 
 type pirateweatherConfig struct {
-	apiKey string
-	debug  bool
+	apiKey     string
+	apiKeyFile string
+	debug      bool
 }
 
 func (c *pirateweatherConfig) Setup() {
 	flag.StringVar(&c.apiKey, "pirateweather-api-key", "", "pirateweather backend: the api `KEY` to use")
+	flag.StringVar(&c.apiKeyFile, "pirateweather-api-key-file", "", "pirateweather backend: the path to a `FILE` containing the api key")
 	flag.BoolVar(&c.debug, "pirateweather-debug", false, "pirateweather backend: print raw req and res")
 }
 
 func (c *pirateweatherConfig) Fetch(location string, numdays int) iface.Data {
-	if c.apiKey == "" {
+	apiKey, err := ResolveAPIKey(c.apiKey, c.apiKeyFile)
+	if err != nil {
+		log.Fatalf("Failed to read pirateweather.net API key file: %v\n", err)
+	}
+	if apiKey == "" {
 		log.Fatal("No pirateweather.net API key specified.\nYou have to register for one at https://pirateweather.net/")
 	}
+	c.apiKey = apiKey
 
 	if c.debug {
 		log.Printf("pirateweather location %v", location)

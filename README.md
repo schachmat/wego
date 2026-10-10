@@ -64,6 +64,8 @@ The config file is resolved in the following order:
 
 ### Backends
 
+For backends requiring an API key, you can specify the key directly with `*-api-key` or provide a path to a key file using `*-api-key-file` (e.g. `owm-api-key-file=/path/to/key.txt`). When both are specified, `*-api-key` takes precedence.
+
 __[Open-Meteo](https://open-meteo.com/)__ — free, no API key required:
 ```
 backend=openmeteo

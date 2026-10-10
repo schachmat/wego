@@ -16,9 +16,10 @@ import (
 )
 
 type openWeatherConfig struct {
-	apiKey string
-	lang   string
-	debug  bool
+	apiKey     string
+	apiKeyFile string
+	lang       string
+	debug      bool
 }
 
 type openWeatherResponse struct {
@@ -72,6 +73,7 @@ const (
 
 func (c *openWeatherConfig) Setup() {
 	flag.StringVar(&c.apiKey, "owm-api-key", "", "openweathermap backend: the api `KEY` to use")
+	flag.StringVar(&c.apiKeyFile, "owm-api-key-file", "", "openweathermap backend: the path to a `FILE` containing the api key")
 	flag.StringVar(&c.lang, "owm-lang", "en", "openweathermap backend: the `LANGUAGE` to request from openweathermap")
 	flag.BoolVar(&c.debug, "owm-debug", false, "openweathermap backend: print raw requests and responses")
 }
@@ -280,9 +282,14 @@ func (c *openWeatherConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
 	loc := ""
 
-	if len(c.apiKey) == 0 {
+	apiKey, err := ResolveAPIKey(c.apiKey, c.apiKeyFile)
+	if err != nil {
+		log.Fatalf("Failed to read openweathermap.org API key file: %v\n", err)
+	}
+	if len(apiKey) == 0 {
 		log.Fatal("No openweathermap.org API key specified.\nYou have to register for one at https://home.openweathermap.org/users/sign_up")
 	}
+	c.apiKey = apiKey
 	if matched, err := regexp.MatchString(`^-?[0-9]*(\.[0-9]+)?,-?[0-9]*(\.[0-9]+)?$`, location); matched && err == nil {
 		s := strings.Split(location, ",")
 		loc = fmt.Sprintf("lat=%s&lon=%s", s[0], s[1])

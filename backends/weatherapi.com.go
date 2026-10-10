@@ -57,9 +57,10 @@ type hourlyWeather struct {
 }
 
 type weatherApiConfig struct {
-	apiKey string
-	debug  bool
-	lang   string
+	apiKey     string
+	apiKeyFile string
+	debug      bool
+	lang       string
 }
 
 const (
@@ -122,6 +123,7 @@ var (
 
 func (c *weatherApiConfig) Setup() {
 	flag.StringVar(&c.apiKey, "weather-api-key", "", "weatherapi backend: the api `Key` to use")
+	flag.StringVar(&c.apiKeyFile, "weather-api-key-file", "", "weatherapi backend: the path to a `FILE` containing the api key")
 	flag.StringVar(&c.lang, "weather-api-lang", "en", "weatherapi backend: the `LANGUAGE` to request from weatherapi")
 	flag.BoolVar(&c.debug, "weather-api-debug", false, "weatherapi backend: print raw requests and responses")
 }
@@ -218,9 +220,14 @@ func (c *weatherApiConfig) parseCurCond(forecastInfo currentCond) (iface.Cond, e
 func (c *weatherApiConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
 
-	if len(c.apiKey) == 0 {
+	apiKey, err := ResolveAPIKey(c.apiKey, c.apiKeyFile)
+	if err != nil {
+		log.Fatalf("Failed to read weatherapi.com API key file: %v\n", err)
+	}
+	if len(apiKey) == 0 {
 		log.Fatal("No weatherapi.com API key specified.\nYou have to register for one at https://weatherapi.com/signup.aspx")
 	}
+	c.apiKey = apiKey
 
 	resp, err := c.fetch(
 		fmt.Sprintf(weatherApiURI, c.apiKey, location, strconv.Itoa(numdays), c.lang),

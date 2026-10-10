@@ -20,13 +20,15 @@ const (
 )
 
 type CaiyunConfig struct {
-	apiKey string
-	lang   string
-	debug  bool
+	apiKey     string
+	apiKeyFile string
+	lang       string
+	debug      bool
 }
 
 func (c *CaiyunConfig) Setup() {
 	flag.StringVar(&c.apiKey, "caiyun-api-key", "", "caiyun backend: the api `KEY` to use")
+	flag.StringVar(&c.apiKeyFile, "caiyun-api-key-file", "", "caiyun backend: the path to a `FILE` containing the api key")
 	flag.StringVar(&c.lang, "caiyun-lang", "en", "caiyun backend: the `LANGUAGE` to request from caiyunapp.com/")
 	flag.BoolVar(&c.debug, "caiyun-debug", true, "caiyun backend: print raw requests and responses")
 }
@@ -143,6 +145,12 @@ func (c *CaiyunConfig) GetWeatherDataFromLocalBegin(lng float64, lat float64, nu
 }
 
 func (c *CaiyunConfig) Fetch(location string, numdays int) iface.Data {
+	apiKey, err := ResolveAPIKey(c.apiKey, c.apiKeyFile)
+	if err != nil {
+		log.Fatalf("Failed to read caiyun API key file: %v\n", err)
+	}
+	c.apiKey = apiKey
+
 	if c.debug {
 		log.Printf("caiyun location %v", location)
 	}

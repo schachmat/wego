@@ -15,8 +15,9 @@ import (
 )
 
 type openmeteoConfig struct {
-	apiKey string
-	debug  bool
+	apiKey     string
+	apiKeyFile string
+	debug      bool
 }
 
 type curCond struct {
@@ -108,6 +109,7 @@ var (
 
 func (opmeteo *openmeteoConfig) Setup() {
 	flag.StringVar(&opmeteo.apiKey, "openmeteo-api-key", "", "openmeteo backend: the api `KEY` to use if commercial usage")
+	flag.StringVar(&opmeteo.apiKeyFile, "openmeteo-api-key-file", "", "openmeteo backend: the path to a `FILE` containing the api key if commercial usage")
 	flag.BoolVar(&opmeteo.debug, "openmeteo-debug", false, "openmeteo backend: print raw requests and responses")
 }
 
@@ -164,6 +166,12 @@ func (opmeteo *openmeteoConfig) Fetch(location string, numdays int) iface.Data {
 	var ret iface.Data
 	var params []string
 	var loc string
+
+	apiKey, err := ResolveAPIKey(opmeteo.apiKey, opmeteo.apiKeyFile)
+	if err != nil {
+		log.Fatalf("Failed to read openmeteo API key file: %v\n", err)
+	}
+	opmeteo.apiKey = apiKey
 
 	if numdays <= 0 {
 		log.Fatal("Number of days less than 1 ")
