@@ -16,6 +16,7 @@
 * unit systems: `metric`, `imperial`, `si`, `metric-ms`
 * disk caching of weather data with configurable TTL (`--cache-ttl`)
 * multi language support
+* location aliases for quick lookups (`-a`, `--alias`, or direct location shortcut)
 * config file for default location which can be overridden by commandline
 * automatic config management with [ingo](https://github.com/schachmat/ingo)
 * built-in man page (`wego --man`)
@@ -61,6 +62,25 @@ The config file is resolved in the following order:
 2. `$XDG_CONFIG_HOME/wego/wegorc` (or OS equivalent via `os.UserConfigDir()`), if it exists.
 3. `$HOME/.wegorc` (legacy location, for backward compatibility), if it exists.
 4. If none of the above exist, a new config file is created at `$XDG_CONFIG_HOME/wego/wegorc`.
+
+### Location Aliases
+
+You can configure shortcuts for frequently checked locations or coordinates in your `wegorc` file:
+```
+location-aliases=home=27.35,-82.49,work=28.4311,-81.3077
+```
+Or in an `aliases` file in your wego configuration directory (e.g. `~/.config/wego/aliases`):
+```
+home=27.35,-82.49
+work=28.4311,-81.3077
+```
+
+Aliases can then be passed with the `-a` / `--alias` flag, or directly as a location shortcut (case-insensitively):
+```shell
+wego -a home
+wego home
+wego -a work 4
+```
 
 ### Backends
 
