@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/json"
 	"flag"
@@ -122,6 +123,151 @@ func saveCache(path string, data iface.Data, ttl time.Duration) {
 	}
 }
 
+// parseAliases parses alias definitions from a string.
+// Supported formats include comma-, semicolon-, and newline-separated pairs of
+// alias=location or alias:location. Alias names are stored in lowercase.
+func parseAliases(s string) map[string]string {
+	aliases := make(map[string]string)
+	if strings.TrimSpace(s) == "" {
+		return aliases
+	}
+
+	var lines []string
+	scanner := bufio.NewScanner(strings.NewReader(s))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		lines = append(lines, line)
+	}
+
+	normalized := strings.Join(lines, ";")
+
+	for _, chunk := range strings.Split(normalized, ";") {
+		chunk = strings.TrimSpace(chunk)
+		if chunk == "" {
+			continue
+		}
+
+		// Count assignment operators (= or :) in this chunk
+		assignCount := 0
+		for _, r := range chunk {
+			if r == '=' || r == ':' {
+				assignCount++
+			}
+		}
+
+		if assignCount <= 1 {
+			idx := strings.IndexAny(chunk, "=:")
+			if idx != -1 {
+				key := strings.TrimSpace(chunk[:idx])
+				val := strings.TrimSpace(chunk[idx+1:])
+				if key != "" && val != "" {
+					aliases[strings.ToLower(key)] = val
+				}
+			}
+			continue
+		}
+
+		// Multiple assignments in a single chunk (e.g. comma-separated pairs)
+		var currentKey, currentVal string
+		for _, part := range strings.Split(chunk, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+
+			if idx := strings.IndexAny(part, "=:"); idx != -1 {
+				if currentKey != "" && currentVal != "" {
+					aliases[strings.ToLower(currentKey)] = currentVal
+				}
+				currentKey = strings.TrimSpace(part[:idx])
+				currentVal = strings.TrimSpace(part[idx+1:])
+			} else {
+				if currentKey != "" {
+					if currentVal != "" {
+						currentVal += "," + part
+					} else {
+						currentVal = part
+					}
+				}
+			}
+		}
+		if currentKey != "" && currentVal != "" {
+			aliases[strings.ToLower(currentKey)] = currentVal
+		}
+	}
+
+	return aliases
+}
+
+// loadAliasesFile loads alias mappings from a file if it exists.
+// Returns an empty map if the file does not exist or cannot be read.
+func loadAliasesFile(path string) map[string]string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return make(map[string]string)
+	}
+	return parseAliases(string(data))
+}
+
+// lookupAlias looks up an alias in the aliases map case-insensitively,
+// following alias chains while avoiding cycles.
+func lookupAlias(name string, aliases map[string]string) (string, bool) {
+	if aliases == nil {
+		return "", false
+	}
+	curr := strings.ToLower(strings.TrimSpace(name))
+	if curr == "" {
+		return "", false
+	}
+	target, ok := aliases[curr]
+	if !ok {
+		return "", false
+	}
+	// Follow alias chains with cycle prevention
+	visited := map[string]bool{curr: true}
+	for {
+		nextKey := strings.ToLower(strings.TrimSpace(target))
+		if visited[nextKey] {
+			break
+		}
+		nextTarget, nextOk := aliases[nextKey]
+		if !nextOk {
+			break
+		}
+		nextTargetKey := strings.ToLower(strings.TrimSpace(nextTarget))
+		if visited[nextTargetKey] {
+			break
+		}
+		visited[nextKey] = true
+		target = nextTarget
+	}
+	return target, true
+}
+
+// resolveAlias resolves an alias name against defined aliases (case-insensitively).
+// If the alias is found, it returns the resolved location.
+// Otherwise, it returns the input name as a fallback.
+func resolveAlias(name string, aliases map[string]string) string {
+	if target, ok := lookupAlias(name, aliases); ok {
+		return target
+	}
+	return name
+}
+
+// resolveLocation resolves the weather query location based on location, alias flag, and defined aliases.
+// If an alias flag is provided, it resolves the alias against defined aliases (case-insensitively).
+// If no alias flag is provided, it checks whether the location matches a defined alias.
+// In all cases, if no matching alias is found, it falls back to the provided location or alias.
+func resolveLocation(loc, alias string, aliases map[string]string) string {
+	if alias != "" {
+		return resolveAlias(alias, aliases)
+	}
+	return resolveAlias(loc, aliases)
+}
+
 func pluginLists() {
 	bEnds := make([]string, 0, len(iface.AllBackends))
 	for name := range iface.AllBackends {
@@ -151,6 +297,10 @@ func main() {
 	// initialize global flags and default config
 	location := flag.String("location", "40.748,-73.985", "`LOCATION` to be queried")
 	flag.StringVar(location, "l", "40.748,-73.985", "`LOCATION` to be queried (shorthand)")
+	alias := flag.String("alias", "", "`ALIAS` for location to be queried")
+	flag.StringVar(alias, "a", "", "`ALIAS` for location to be queried (shorthand)")
+	locationAliases := flag.String("location-aliases", "", "comma or semicolon-separated list of `ALIAS=LOCATION` pairs")
+	flag.StringVar(locationAliases, "aliases", "", "comma or semicolon-separated list of `ALIAS=LOCATION` pairs (shorthand)")
 	numdays := flag.Int("days", 3, "`NUMBER` of days of weather forecast to be displayed")
 	flag.IntVar(numdays, "d", 3, "`NUMBER` of days of weather forecast to be displayed (shorthand)")
 	unitSystem := flag.String("units", "metric", "`UNITSYSTEM` to use for output.\n    \tChoices are: metric, imperial, si, metric-ms")
@@ -216,6 +366,13 @@ func main() {
 			*location = arg
 		}
 	}
+
+	// resolve location aliases (from alias file and config/flags)
+	aliases := loadAliasesFile(filepath.Join(filepath.Dir(configPath), "aliases"))
+	for k, v := range parseAliases(*locationAliases) {
+		aliases[k] = v
+	}
+	*location = resolveLocation(*location, *alias, aliases)
 
 	// get selected backend and fetch the weather data from it
 	be, ok := iface.AllBackends[*selectedBackend]
