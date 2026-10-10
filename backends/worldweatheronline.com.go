@@ -67,9 +67,10 @@ type wwoCoordinateResp struct {
 }
 
 type wwoConfig struct {
-	apiKey   string
-	language string
-	debug    bool
+	apiKey     string
+	apiKeyFile string
+	language   string
+	debug      bool
 }
 
 const (
@@ -249,6 +250,7 @@ func wwoUnmarshalLang(body []byte, r *wwoResponse, lang string) error {
 
 func (c *wwoConfig) Setup() {
 	flag.StringVar(&c.apiKey, "wwo-api-key", "", "worldweatheronline backend: the api `KEY` to use")
+	flag.StringVar(&c.apiKeyFile, "wwo-api-key-file", "", "worldweatheronline backend: the path to a `FILE` containing the api key")
 	flag.StringVar(&c.language, "wwo-lang", "en", "worldweatheronline backend: the `LANGUAGE` to request from worldweatheronline")
 	flag.BoolVar(&c.debug, "wwo-debug", false, "worldweatheronline backend: print raw requests and responses")
 }
@@ -307,9 +309,14 @@ func (c *wwoConfig) Fetch(loc string, numdays int) iface.Data {
 	var ret iface.Data
 	coordChan := make(chan *iface.LatLon)
 
-	if len(c.apiKey) == 0 {
+	apiKey, err := ResolveAPIKey(c.apiKey, c.apiKeyFile)
+	if err != nil {
+		log.Fatalf("Failed to read worldweatheronline API key file: %v\n", err)
+	}
+	if len(apiKey) == 0 {
 		log.Fatal("No API key specified. Setup instructions are in the README.")
 	}
+	c.apiKey = apiKey
 	params = append(params, "key="+c.apiKey)
 
 	if len(loc) > 0 {
